@@ -1,0 +1,15 @@
+Celem projektu jest stworzenie bazy danych przeznaczonej do obsługi aplikacji pozwalającej na udostępnianie zdjęć innym użytkownikom. 
+Aplikacja powinna pozwalać na utworzenie konta, zalogowanie się użytkonika, pozwalać użytkownikom na dodawanie się do znajomych, komentowanie pod zdjęciami innych oraz polubienia.
+Każdy użtkownik musi mieć możliwość zablokowania dowolnej liczby innych użytkowników,
+co spowoduje, że nie będą widzieli zdjęć i komentarzy należących do zablokowanych użytkowników. 
+W aplikacji powinien być zaimplementowany system wyszukiwania po tagach, nazwie użytkownika oraz treści tytułu.
+Dodatkowo aplikacja ma zapewniać bezpieczeństwo dostępu do danych.
+Użytkownicy powinni mieć możliwość obeserwowania innych, co powinno skutkować wyświetlaniem się postów obserwowanych użytkowników 
+w pewnym miejscu w aplikacji. Dostęp do aplikacji powinien być realizowany z możliwością przeglądania zarówno na komputerze jak i na telefonie.
+Aplikacja powinna dostarczać panel administracyjny, który wyświetla w przejrzysty sposób wykorzystanie zasoby (przestrzeń dyskowa), oraz "graf znajomosci" użytkowników.
+
+## Technologie:
+RDBMS: MariaDB
+Backend: Docker + NodeJS
+Frontend: Svelte
+

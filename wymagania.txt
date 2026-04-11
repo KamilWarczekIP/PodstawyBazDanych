@@ -1,0 +1,42 @@
+# Wymagania funkcjinalne
+System umożliwia utworzenie konta użytkownika poprzez formularz rejestracyjny.
+System umożliwia logowanie i wylogowanie użytkownika.
+System umożliwia edycję danych profilu (nazwa, opis, zdjęcie profilowe).
+Użytkownik może przesłać zdjęcie do aplikacji.
+Użytkownik mousi dodać tytuł oraz opcjonalne tagi do zdjęcia.
+Użytkownik może przeglądać zdjęcia innych użytkowników.
+Użytkownik może komentować zdjęcia innych użytkowników.
+Użytkownik może polubić zdjęcie innego użytkownika.
+System wyświetla liczbę polubień i komentarzy pod zdjęciem.
+Użytkownik może zaobserwować innego użytkownika.
+Użytkownik może zablokować innego użytkownika.
+Użytkownik może zablokować dowolną liczbę innych użytkowników.
+Zablokowany użytkownik nie widzi zdjęć, komentarzy ani aktywności blokującego.
+Zablokowany użytkownik nie może komentować zdjęć użytkownika, który go zablokował.
+System dostarcza możliwość wyszukiwania zdjęć po tagach.
+System dostarcza możliwość wyszukiwania użytkownika po jego nazwie
+System wyświetla listę najnowszych zdjęć dodanych przez obserwowane osoby.
+Skumulowany widok zdjęć od osób obserwowanych jest dostępny w dedykowanej sekcji aplikacji.
+Aplikacja umożliwia korzystanie z interfejsu przez przeglądarkę internetową.
+System dostarcza panel administracyjny, który wyświtla aktualne informacje o serwerze (zużycie procesora, pamięci i dysku).
+Panel administracyjny pozwala na zarządzanie wszystkimi użytkownikami w systemie.
+Panel administracyjny umozliwia wyświetlenie grafu użytkowników, na którym zaznaczone są relacje - obserwowania i blokad.
+ 
+
+# Wymagania niefunkcjonalne
+Hasła muszą być przechowywane w formie zaszyfrowanej (hash + salt).
+Komunikacja między klientem a serwerem musi być szyfrowana (HTTPS).
+System musi chronić przed atakami typu SQL Injection, XSS, CSRF.
+Dostęp do panelu administracyjnego wymaga podwyższonych uprawnień.
+System powinien obsługiwać minimum 10 równoczesnych użytkowników (wartość do ustalenia).
+Czas odpowiedzi API nie powinien przekraczać 2 sekund dla standardowych operacji.
+Wyszukiwanie powinno działać z jak najmniejszym opóźnieniem.
+System powinien zapewniać odporność na awarie poprzez mechanizmy backupu bazy danych.
+Interfejs powinien być intuicyjny i zgodny z zasadami UX.
+Aplikacja powinna zapewniać spójny wygląd na wszystkich urządzeniach.
+Panel administracyjny powinien prezentować dane w sposób czytelny i wizualnie uporządkowany.
+Backend musi być zbudowany w Node.js.
+Backend musi działać w środowisku Docker.
+Frontend musi być zbudowany w Svelte.
+Baza danych musi być oparta o MariaDB.
+Aplikacja musi działać w najpopularniejszych przeglądarkach: Chrome, Firefox.
