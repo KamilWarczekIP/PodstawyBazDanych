@@ -29,7 +29,7 @@ async function initializeDatabase() {
         await connection.execute(`USE ${process.env.DB_NAME}`);
 
         console.log('Reading schema file...');
-        const schemaPath = path.join(__dirname, 'database', 'schema.sql');
+        const schemaPath = path.join(__dirname, 'database', 'schema-new.sql');
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
         console.log('Creating tables...');

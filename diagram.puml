@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+actor "Użytkownik\nniezalogowany" as Guest
+actor "Użytkownik\nzalogowany" as User
+actor "Administrator" as Admin
+actor "System\nuwierzytelniania" as Auth
+
+rectangle "Photoapp" {
+  skinparam linetype ortho
+
+  Guest --> (Rejestracja)
+  (Rejestracja) --> (Logowanie)
+  Guest --> (Logowanie)
+  (Logowanie) --> Auth
+  Auth --> User
+
+  User --> (Wylogowanie)
+  (Wylogowanie) --> Guest
+  User --> (Edycja profilu)
+  User --> (Dodanie zdjęcia)
+  User --> (Przeglądanie zdjęć)
+  User --> (Otworzenie zdjęcia\n w pełnoekranowym podglądzie)
+  (Otworzenie zdjęcia\n w pełnoekranowym podglądzie) --> (Dodanie komentarza\n do zdjęcia)
+  (Otworzenie zdjęcia\n w pełnoekranowym podglądzie) --> (Polubienie zdjęcia)
+  (Otworzenie zdjęcia\n w pełnoekranowym podglądzie) --> (Obserwowanie użytkownika)
+  (Otworzenie zdjęcia\n w pełnoekranowym podglądzie) --> (Blokowanie użytkownika)
+
+  User --> (Wyszukiwanie)
+  (Wyszukiwanie) --> (Wyszukiwanie\n po tagach)
+  (Wyszukiwanie) --> (Wyszukiwanie\n po nazwie użytkownika)
+  (Wyszukiwanie) --> (Wyszukiwanie\n po tytule zdjęcia)
+  (Wyszukiwanie\n po tytule zdjęcia) --> (Otworzenie zdjęcia\n w pełnoekranowym podglądzie)
+  (Wyszukiwanie\n po nazwie użytkownika) --> (Obserwowanie użytkownika)
+  (Wyszukiwanie\n po nazwie użytkownika) --> (Blokowanie użytkownika)
+
+  User --> (Wyświetlanie listy\n nowo dodanych zdjęć\n obserwowanych użytkowników)
+  (Wyświetlanie listy\n nowo dodanych zdjęć\n obserwowanych użytkowników) --> (Otworzenie zdjęcia\n w pełnoekranowym podglądzie)
+
+  Admin --> (Logowanie do\n panelu administracyjnego)
+  Admin --> (Zarządzanie użytkownikami)
+  Admin --> (Podgląd zasobów serwera)
+  Admin --> (Wyświetlanie grafu relacji)
+}
+
+@enduml
+

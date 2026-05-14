@@ -1,0 +1,82 @@
+services:
+  # MariaDB Database Service
+  db:
+    image: mariadb:latest
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: ${DB_NAME:-db}
+      MYSQL_USER: ${DB_USER:-photo_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-user_password}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./server/database/schema-new.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - photo_network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  # Node.js Backend Service
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: db
+      DB_USER: ${DB_USER:-photo_user}
+      DB_PASSWORD: ${DB_PASSWORD:-user_password}
+      DB_NAME: ${DB_NAME:-db}
+      DB_PORT: 3306
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your_secret_key_change_in_production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      ADMIN_SECRET: ${ADMIN_SECRET:-admin_secret_key}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./server/src:/app/src
+      - ./server/uploads:/app/uploads
+    networks:
+      - photo_network
+
+  # Svelte Frontend Service
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://api:3000
+    depends_on:
+      - api
+    networks:
+      - photo_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173"]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+
+volumes:
+  db_data:
+
+networks:
+  photo_network:
+    driver: bridge
