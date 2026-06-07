@@ -9,7 +9,7 @@ const { query } = require('../config/database');
 router.post('/register', [
     body('username').isLength({ min: 3, max: 50 }).trim().escape(),
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 })
+    body('password').isLength({ min: 1 })
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -21,8 +21,8 @@ router.post('/register', [
 
         // Check if user exists
         const existingUser = await query(
-            'SELECT id FROM users WHERE username = ? OR email = ?',
-            [username, email]
+            'SELECT id FROM users WHERE email = ?',
+            [email]
         );
 
         if (existingUser.length > 0) {
@@ -79,13 +79,13 @@ router.post('/login', [
         // Generate token
         const token = jwt.sign(
             { id: user.id, username: user.username, email: user.email },
-            process.env.JWT_SECRET || 'your_secret_key',
-            { expiresIn: process.env.JWT_EXPIRATION || '24h' }
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRATION + "h" }
         );
 
         // Log session
         await query(
-            'INSERT INTO sessions (user_id, jwt, valid_until) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))',
+            'INSERT INTO sessions (user_id, jwt, valid_until) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ' + process.env.JWT_EXPIRATION + ' HOUR))',
             [user.id, token]
         );
 

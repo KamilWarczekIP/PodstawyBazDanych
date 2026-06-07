@@ -71,7 +71,7 @@ router.delete('/:photoId', authenticateToken, async (req, res) => {
         );
 
         if (likes.length === 0) {
-            return res.status(404).json({ error: 'Like not found' });
+            return res.status(409).json({ error: 'Photo already unliked' });
         }
 
         await query(

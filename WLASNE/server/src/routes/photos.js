@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
-const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
-
-const DEFAULT_IMAGE_URL = 'https://via.placeholder.com/800x600?text=Photo';
-const DEFAULT_AVATAR_URL = 'https://via.placeholder.com/40';
 
 function parsePhotoRow(photo) {
     const descriptionText = photo.description || '';
@@ -26,7 +23,7 @@ function parsePhotoRow(photo) {
 }
 
 // Get user posts
-router.get('/user/:userId', optionalAuth, async (req, res) => {
+router.get('/user/:userId', authenticateToken, async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user?.id;
@@ -35,7 +32,7 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
 
         if (currentUserId) {
             const blockCheck = await query(
-                'SELECT id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+                'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
                 [currentUserId, userId, userId, currentUserId]
             );
             if (blockCheck.length > 0) {
@@ -57,49 +54,26 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
             'SELECT COUNT(*) as count FROM photos WHERE owner_id = ?',
             [userId]
         );
-
-        const enhancedPhotos = await Promise.all(photos.map(async (photo) => {
-            const [likeCount] = await query(
-                'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',
-                [photo.id]
-            );
-
-            const [commentCount] = await query(
-                'SELECT COUNT(*) as count FROM comments WHERE photo_id = ?',
-                [photo.id]
-            );
-
-            let userLiked = false;
-            if (currentUserId) {
-                const userLike = await query(
-                    'SELECT id FROM likes WHERE photo_id = ? AND user_id = ?',
-                    [photo.id, currentUserId]
-                );
-                userLiked = userLike.length > 0;
-            }
-
+        const fullPhotosInfo = await Promise.all(photos.map(async (photo) => {
             return {
-                ...parsePhotoRow(photo),
-                likeCount: likeCount.count,
-                commentCount: commentCount.count,
-                userLiked
-            };
+                ...parsePhotoRow(photo)
+            }
         }));
 
         res.json({
-            photos: enhancedPhotos,
-            total: totalCount[0].count,
+            photos: fullPhotosInfo,
+            total: totalCount[0],
             page: parseInt(page, 10),
             limit: parseInt(limit, 10)
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to fetch posts' });
+        res.status(500).json({ error: 'Failed to fetch photos' });
     }
 });
 
 // Get single post
-router.get('/:photoId', optionalAuth, async (req, res) => {
+router.get('/:photoId', authenticateToken, async (req, res) => {
     try {
         const { photoId } = req.params;
         const currentUserId = req.user?.id;
@@ -120,7 +94,7 @@ router.get('/:photoId', optionalAuth, async (req, res) => {
 
         if (currentUserId) {
             const blockCheck = await query(
-                'SELECT id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+                'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
                 [currentUserId, photo.owner_id, photo.owner_id, currentUserId]
             );
             if (blockCheck.length > 0) {
@@ -167,8 +141,7 @@ router.get('/:photoId', optionalAuth, async (req, res) => {
 
 // Create post
 router.post('/', authenticateToken, [
-    body('title').optional().trim().escape(),
-    body('description').optional().trim().escape(),
+    body('description').exists().trim().escape(),
     body('tags').optional()
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -176,30 +149,30 @@ router.post('/', authenticateToken, [
         return res.status(400).json({ errors: errors.array() });
     }
 
+    if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ errors: "No files were uploaded" });
+    }
+    if(req.files.foo.mimetype != "image/jpeg") {
+        return res.status(400).json({ errors: "Only image/jpeg mimetype files are supported" });
+    }
+
     try {
-        const { title, description, tags } = req.body;
+        const { description, tags } = req.body;
         const userId = req.user.id;
-
-        const bodyText = [title || '', description || '']
-            .filter(Boolean)
-            .join('\n\n')
-            .trim();
-
-        if (!bodyText) {
-            return res.status(400).json({ error: 'Title or description is required' });
-        }
 
         const result = await query(
             'INSERT INTO photos (owner_id, description) VALUES (?, ?)',
-            [userId, bodyText]
+            [userId, description]
         );
-
         const photoId = result.insertId;
-        const tagList = Array.isArray(tags)
-            ? tags.map(tag => tag.trim()).filter(Boolean)
-            : typeof tags === 'string'
-                ? tags.split(',').map(tag => tag.trim()).filter(Boolean)
-                : [];
+        
+        let uploadedFile = req.files.fileToUpload;
+
+        uploadedFile.mv('./uploads/' + userId + "/" + photoId + ".jpeg", (err) => {
+        if (err) return res.status(500).send(err);
+        });
+
+        const tagList = tags.map(tag => tag.trim()).filter(Boolean);
 
         for (const tagName of tagList) {
             const [tagResult] = await query('SELECT id FROM tags WHERE name = ?', [tagName]);
@@ -219,11 +192,11 @@ router.post('/', authenticateToken, [
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to create post' });
+        res.status(500).json({ error: 'Failed to upload photo' });
     }
 });
 
-// Delete post
+// Delete photo
 router.delete('/:photoId', authenticateToken, async (req, res) => {
     try {
         const { photoId } = req.params;
@@ -235,7 +208,7 @@ router.delete('/:photoId', authenticateToken, async (req, res) => {
         }
 
         if (photos[0].owner_id !== userId) {
-            return res.status(403).json({ error: 'Unauthorized' });
+            return res.status(403).json({ error: 'Unauthorized to delete this photo' });
         }
 
         await query('DELETE FROM photos WHERE id = ?', [photoId]);

@@ -39,14 +39,14 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/photos', require('./routes/photos'));
-app.use('/api/comments', require('./routes/comments'));
-app.use('/api/likes', require('./routes/likes'));
-app.use('/api/follows', require('./routes/follows'));
-app.use('/api/blocks', require('./routes/blocks'));
-app.use('/api/search', require('./routes/search'));
+app.use('/auth', require('./routes/auth'));
+app.use('/users', require('./routes/users'));
+app.use('/photos', require('./routes/photos'));
+app.use('/comments', require('./routes/comments'));
+app.use('/likes', require('./routes/likes'));
+// app.use('/follows', require('./routes/follows'));
+// app.use('/blocks', require('./routes/blocks'));
+// app.use('/search', require('./routes/search'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

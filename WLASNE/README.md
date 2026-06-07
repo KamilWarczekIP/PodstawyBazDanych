@@ -29,6 +29,24 @@ This will build and start three services:
 - `api` on port `3000`
 - `client` on port `5173`
 
+### Frontend development mode
+
+To run the frontend in live-reload mode without rebuilding the production image, use the development profile:
+
+```bash
+docker compose --profile dev up client-dev
+```
+
+This mounts `./client` into the container and starts Vite with `--host 0.0.0.0`, so changes to frontend files are visible immediately.
+
+In development mode, the frontend uses `VITE_API_URL=http://localhost:3000`, so browser requests to the backend go to the host machine's forwarded API port.
+
+If you want the backend to start as well, run:
+
+```bash
+docker compose --profile dev up --build api client-dev
+```
+
 ## Environment
 
 Docker Compose uses the root `.env` file for variable substitution. The repository also includes `.env.docker` as an alternative example environment file.

@@ -45,15 +45,14 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     volumes:
       - ./server/src:/app/src
       - ./server/uploads:/app/uploads
     networks:
       - photo_network
 
-  # Svelte Frontend Service
+  # Svelte Frontend Service (production)
   client:
     build:
       context: ./client
@@ -73,6 +72,56 @@ services:
       timeout: 10s
       retries: 3
       interval: 30s
+
+  # Svelte Frontend Service (development)
+  client-dev:
+    profiles: [dev]
+    image: node:18-alpine
+    container_name: client-dev
+    working_dir: /app
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - api
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - photo_network
+
+  api-dev:
+    profiles: [dev]
+    image: node:18-alpine
+    container_name: api-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: db
+      DB_USER: ${DB_USER:-photo_user}
+      DB_PASSWORD: ${DB_PASSWORD:-user_password}
+      DB_NAME: ${DB_NAME:-db}
+      DB_PORT: 3306
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your_secret_key_change_in_production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-24h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      ADMIN_SECRET: ${ADMIN_SECRET:-admin_secret_key}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    working_dir: /app/src
+    volumes:
+      - ./server/src:/app/src
+      - ./server/uploads:/app/uploads
+      - /app/src/node_modules
+    command: sh -c "npm cache clean --force && npm start"
+    networks:
+      - photo_network
 
 volumes:
   db_data:
