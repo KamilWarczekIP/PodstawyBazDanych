@@ -87,20 +87,20 @@ router.delete('/:photoId', authenticateToken, async (req, res) => {
 });
 
 // Get photo likes count
-router.get('/:photoId', async (req, res) => {
-    try {
-        const { photoId } = req.params;
+// router.get('/:photoId', async (req, res) => {
+//     try {
+//         const { photoId } = req.params;
 
-        const [result] = await query(
-            'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',
-            [photoId]
-        );
+//         const [result] = await query(
+//             'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',
+//             [photoId]
+//         );
 
-        res.json({ count: result.count });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to fetch likes count' });
-    }
-});
+//         res.json({ count: result.count });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to fetch likes count' });
+//     }
+// });
 
 module.exports = router;

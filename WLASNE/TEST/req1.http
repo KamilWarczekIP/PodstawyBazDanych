@@ -1,7 +1,9 @@
-GET http://localhost:3000/likes/1 HTTP/1.1
+POST http://localhost:3000/photos HTTP/1.1
 content-type: application/json
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJrYW1pbCIsImVtYWlsIjoicGxAcGwucGwiLCJpYXQiOjE3ODAxNjQ4MTIsImV4cCI6MTc4MDI1MTIxMn0.R5wAWVX-_9PC-spj6GZjnEgz5HWbszArIx5d9y26WPc
 
 {
     "description":"lorem ipsum"
 }
+
+< ./test.jpg
