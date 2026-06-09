@@ -3,6 +3,85 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const upload = multer(
+    {
+        dest: path.join(process.cwd(), 'upload'),
+        limits: { fileSize: 10000000 }, // Set a max file size
+        fileFilter: function (req, file, cb) { // Filter out certain files
+            const filetypes = /jpeg|jpg/
+            // Test if the uploaded image file extensions match the allowed types
+            const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
+            // Test if the uploaded image mimetypes match the allowed types 
+            const mimetype = filetypes.test(file.mimetype)
+            // If both test return true allow the images to be uploaded
+            if(mimetype && extname){
+                return cb(null,true)
+            } else { // otherwise return the following error
+                cb("Please upload images only")
+            }
+        }
+    });
+
+
+
+// Create post description(required) tags(Array Optional)
+router.post('/', 
+    authenticateToken, 
+    upload.single('photo_data'), 
+async (req, res) => {
+
+    if (req.file == undefined) {
+        return res.status(400).json({ errors: "No files were uploaded" })
+    }
+
+    try {
+        const { description } = req.body;
+
+        if(description == undefined || description.length < 1)
+            return res.status(400).json({ errors: "Description is missing" })
+        
+        const tags = req.body.tags != undefined ? req.body.tags : [];
+
+        const userId = req.user.id;
+
+        const result = await query(
+            'INSERT INTO photos (owner_id, description) VALUES (?, ?)',
+            [userId, description]
+        );
+        const photoId = result.insertId;
+        
+        fs.rename(req.file.path, path.join(process.cwd(), 'uploads', userId + "", photoId + ".jpg"), (err) => {
+            if (err) return res.status(500);
+        })
+        
+
+        const tagList = tags.map(tag => tag.trim()).filter(Boolean);
+
+        for (const tagName of tagList) {
+            const [tagResult] = await query('SELECT id FROM tags WHERE name = ?', [tagName]);
+            let tagId;
+            if (!tagResult) {
+                const newTag = await query('INSERT INTO tags (name) VALUES (?)', [tagName]);
+                tagId = newTag.insertId;
+            } else {
+                tagId = tagResult.id;
+            }
+            await query('INSERT INTO photo_tags (photo_id, tag_id) VALUES (?, ?)', [photoId, tagId]);
+        }
+
+        res.status(201).json({
+            message: 'Post created successfully',
+            photoId
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to upload photo' });
+    }
+});
 
 function parsePhotoRow(photo) {
     const descriptionText = photo.description || '';
@@ -139,62 +218,6 @@ router.get('/:photoId', authenticateToken, async (req, res) => {
     }
 });
 
-// Create post
-router.post('/', authenticateToken, [
-    body('description').exists().trim().escape(),
-    body('tags').optional()
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    if (!req.files || Object.keys(req.files).length === 0) {
-        return res.status(400).json({ errors: "No files were uploaded" });
-    }
-    if(req.files.foo.mimetype != "image/jpeg") {
-        return res.status(400).json({ errors: "Only image/jpeg mimetype files are supported" });
-    }
-
-    try {
-        const { description, tags } = req.body;
-        const userId = req.user.id;
-
-        const result = await query(
-            'INSERT INTO photos (owner_id, description) VALUES (?, ?)',
-            [userId, description]
-        );
-        const photoId = result.insertId;
-        
-        let uploadedFile = req.files.fileToUpload;
-
-        uploadedFile.mv('./uploads/' + userId + "/" + photoId + ".jpeg", (err) => {
-        if (err) return res.status(500).send(err);
-        });
-
-        const tagList = tags.map(tag => tag.trim()).filter(Boolean);
-
-        for (const tagName of tagList) {
-            const [tagResult] = await query('SELECT id FROM tags WHERE name = ?', [tagName]);
-            let tagId;
-            if (!tagResult) {
-                const newTag = await query('INSERT INTO tags (name) VALUES (?)', [tagName]);
-                tagId = newTag.insertId;
-            } else {
-                tagId = tagResult.id;
-            }
-            await query('INSERT INTO photo_tags (photo_id, tag_id) VALUES (?, ?)', [photoId, tagId]);
-        }
-
-        res.status(201).json({
-            message: 'Post created successfully',
-            photoId
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to upload photo' });
-    }
-});
 
 // Delete photo
 router.delete('/:photoId', authenticateToken, async (req, res) => {
@@ -212,6 +235,10 @@ router.delete('/:photoId', authenticateToken, async (req, res) => {
         }
 
         await query('DELETE FROM photos WHERE id = ?', [photoId]);
+
+        fs.rm(path.join(process.cwd(), 'uploads', userId + "", photoId + ".jpg"), (err) => {
+            if (err) return res.status(500);
+        })
 
         res.json({ message: 'Post deleted successfully' });
     } catch (error) {

@@ -1,9 +1,18 @@
 POST http://localhost:3000/photos HTTP/1.1
-content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJrYW1pbCIsImVtYWlsIjoicGxAcGwucGwiLCJpYXQiOjE3ODAxNjQ4MTIsImV4cCI6MTc4MDI1MTIxMn0.R5wAWVX-_9PC-spj6GZjnEgz5HWbszArIx5d9y26WPc
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJhZG1pbiIsImVtYWlsIjoia2FtaWxAd3AucGwiLCJpYXQiOjE3ODA5OTE3OTcsImV4cCI6MTc4MTA3ODE5N30.zfPgVj8-P1sy-81-2E67e58LT6TL2q7B_E-kGU5v05U
+Content-Type: multipart/form-data; boundary=WebKitFormBoundaryX
+
+--WebKitFormBoundaryX
+Content-Disposition: form-data; name="description"
+Content-Type: application/json
 
 {
-    "description":"lorem ipsum"
+    "description":"asd"
 }
 
+--WebKitFormBoundaryX
+Content-Disposition: form-data; name="photo_data"; filename="test.jpg"
+Content-Type: image/jpeg
+
 < ./test.jpg
+--WebKitFormBoundaryX--

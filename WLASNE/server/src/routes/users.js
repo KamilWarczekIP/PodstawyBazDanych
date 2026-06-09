@@ -116,24 +116,24 @@ router.put('/:userId', authenticateToken, [
     }
 });
 
-// Get user info - only name
-router.get('/name/:userId', authenticateToken, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const currentUserId = req.user.id;
+// // Get user info - only name
+// router.get('/name/:userId', authenticateToken, async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const currentUserId = req.user.id;
 
-        const users = await query(
-            'SELECT username FROM users WHERE id = ?',
-            [userId]
-        );
+//         const users = await query(
+//             'SELECT username FROM users WHERE id = ?',
+//             [userId]
+//         );
 
-        res.json({
-            username: users[0].username
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to fetch user info' });
-    }
-});
+//         res.json({
+//             username: users[0].username
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to fetch user info' });
+//     }
+// });
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -36,11 +37,15 @@ router.post('/register', [
             'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
             [username, email, hashedPassword]
         );
+        
+        fs.mkdir(path.join(process.cwd(), 'uploads', result.insertId + ""))
+        
 
         res.status(201).json({
             message: 'User registered successfully',
             userId: result.insertId
         });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Registration failed' });
