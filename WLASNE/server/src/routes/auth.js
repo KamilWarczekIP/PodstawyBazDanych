@@ -88,12 +88,6 @@ router.post('/login', [
             { expiresIn: process.env.JWT_EXPIRATION + "h" }
         );
 
-        // Log session
-        await query(
-            'INSERT INTO sessions (user_id, jwt, valid_until) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ' + process.env.JWT_EXPIRATION + ' HOUR))',
-            [user.id, token]
-        );
-
         res.json({
             token,
             user: {

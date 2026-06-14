@@ -5,56 +5,57 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
 // Search photos by title, description, or tags
-router.get('/photos', optionalAuth, [
-    body('q').trim().isLength({ min: 1 })
+router.get('/photos', authenticateToken, [
+    body('queryTerm').exists().trim().isLength({ min: 3 }),
+    body('tags').optional().isArray(),
+    body('page').exists().isInt(),
+    body('limit').exists().isInt(),
 ], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
-        const { q, page = 1, limit = 10 } = req.query;
-        const currentUserId = req.user?.id;
-
-        if (!q || q.trim().length === 0) {
-            return res.status(400).json({ error: 'Search query required' });
-        }
+        const { queryTerm, page, limit, tags = [] } = req.body;
+        const currentUserId = req.user.id;
 
         const offset = (page - 1) * limit;
-        const searchQuery = `%${q}%`;
+        const searchQuery = `%${queryTerm}%`;
 
-        // Build blocked users subquery
-        let blockedSubquery = '1=1';
-        if (currentUserId) {
-            blockedSubquery = `p.user_id NOT IN (
+
+        const photos = await query(
+            `SELECT p.id, p.owner_id, p.description, u.username
+             FROM photos p
+             JOIN users u ON p.owner_id = u.id
+             WHERE (p.description LIKE ?)
+             AND p.owner_id NOT IN (
                 SELECT blocked_id FROM blocks WHERE blocker_id = ${currentUserId}
                 UNION
                 SELECT blocker_id FROM blocks WHERE blocked_id = ${currentUserId}
-            )`;
-        }
-
-        const photos = await query(
-            `SELECT p.id, p.user_id, p.title, p.description, p.image_url, p.created_at, u.username
-             FROM photos p
-             JOIN users u ON p.user_id = u.id
-             WHERE p.is_deleted = FALSE
-             AND (p.title LIKE ? OR p.description LIKE ?)
-             AND ${blockedSubquery}
-             ORDER BY p.created_at DESC
-             LIMIT ? OFFSET ?`,
-            [searchQuery, searchQuery, parseInt(limit), offset]
+            )
+             ORDER BY p.id DESC
+             LIMIT ?`,
+            [searchQuery, limit]
         );
 
         // Also search by tags
         const tagPhotos = await query(
-            `SELECT DISTINCT p.id, p.user_id, p.title, p.description, p.image_url, p.created_at, u.username
+            `SELECT DISTINCT p.id, p.owner_id, p.description, u.username
              FROM photos p
-             JOIN users u ON p.user_id = u.id
+             JOIN users u ON p.owner_id = u.id
              JOIN photo_tags pt ON p.id = pt.photo_id
              JOIN tags t ON pt.tag_id = t.id
-             WHERE p.is_deleted = FALSE
-             AND t.name LIKE ?
-             AND ${blockedSubquery}
-             ORDER BY p.created_at DESC
-             LIMIT ? OFFSET ?`,
-            [searchQuery, parseInt(limit), offset]
+             WHERE t.name LIKE ?
+             AND p.owner_id NOT IN (
+                SELECT blocked_id FROM blocks WHERE blocker_id = ${currentUserId}
+                UNION
+                SELECT blocker_id FROM blocks WHERE blocked_id = ${currentUserId}
+            )
+             ORDER BY p.id DESC
+             LIMIT ?`,
+            [searchQuery, limit]
         );
+        console.log(tagPhotos)
 
         // Combine and deduplicate results
         const allPhotos = [...photos];
@@ -66,19 +67,19 @@ router.get('/photos', optionalAuth, [
         });
 
         res.json({
-            photos: allPhotos.slice(0, limit),
-            query: q,
-            page: parseInt(page),
-            limit: parseInt(limit)
+            photos: allPhotos.slice(offset, offset + limit),
+            query: queryTerm,
+            page: page,
+            limit: limit,
         });
     } catch (error) {
-        console.error(error);
+        console.log(error)
         res.status(500).json({ error: 'Search failed' });
     }
 });
 
 // Search users by username
-router.get('/users', optionalAuth, async (req, res) => {
+router.get('/users', authenticateToken, async (req, res) => {
     try {
         const { q, page = 1, limit = 10 } = req.query;
         const currentUserId = req.user?.id;
@@ -171,7 +172,7 @@ router.get('/users', optionalAuth, async (req, res) => {
 });
 
 // Search by tags
-router.get('/tags', optionalAuth, async (req, res) => {
+router.get('/tags', authenticateToken, async (req, res) => {
     try {
         const { q, page = 1, limit = 10 } = req.query;
 

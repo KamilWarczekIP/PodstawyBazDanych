@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const upload = multer(
     {
-        dest: path.join(process.cwd(), 'upload'),
+        dest: path.join(process.cwd(), 'tmp'),
         limits: { fileSize: 10000000 }, // Set a max file size
         fileFilter: function (req, file, cb) { // Filter out certain files
             const filetypes = /jpeg|jpg/
@@ -31,7 +31,7 @@ const upload = multer(
 // Create post description(required) tags(Array Optional)
 router.post('/', 
     authenticateToken, 
-    upload.single('photo_data'), 
+    upload.single('photo_data'),
 async (req, res) => {
 
     if (req.file == undefined) {
@@ -39,12 +39,13 @@ async (req, res) => {
     }
 
     try {
-        const { description } = req.body;
+        const requestBody = JSON.parse(req.body.body);
+        const { description } = requestBody;
 
         if(description == undefined || description.length < 1)
             return res.status(400).json({ errors: "Description is missing" })
         
-        const tags = req.body.tags != undefined ? req.body.tags : [];
+        const tags = requestBody.tags != undefined ? requestBody.tags : [];
 
         const userId = req.user.id;
 
@@ -84,40 +85,38 @@ async (req, res) => {
 });
 
 function parsePhotoRow(photo) {
-    const descriptionText = photo.description || '';
-    const [firstLine, ...rest] = descriptionText.split('\n\n');
-    const title = firstLine || `Post #${photo.id}`;
-    const description = rest.join('\n\n').trim();
-
     return {
         id: photo.id,
         user_id: photo.owner_id,
         username: photo.username,
-        title,
-        description,
-        image_url: photo.image_url || `${DEFAULT_IMAGE_URL}+${photo.id}`,
-        created_at: photo.created_at || new Date().toISOString(),
-        user_avatar_url: photo.user_avatar_url || DEFAULT_AVATAR_URL
+        description: photo.description || '',
     };
 }
 
 // Get user posts
-router.get('/user/:userId', authenticateToken, async (req, res) => {
+router.get('/user/:userId', authenticateToken, [
+    body('page').exists().isInt(),
+    body('limit').exists().isInt(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const { userId } = req.params;
-        const currentUserId = req.user?.id;
-        const { page = 1, limit = 10 } = req.query;
+        const currentUserId = req.user.id;
+        const { page = 1, limit = 10 } = req.body;
         const offset = (page - 1) * limit;
 
-        if (currentUserId) {
-            const blockCheck = await query(
-                'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
-                [currentUserId, userId, userId, currentUserId]
-            );
-            if (blockCheck.length > 0) {
-                return res.status(403).json({ error: 'Cannot view this user\'s posts' });
-            }
+
+        const blockCheck = await query(
+            'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+            [currentUserId, userId, userId, currentUserId]
+        );
+        if (blockCheck.length > 0) {
+            return res.status(403).json({ error: 'Cannot view this user\'s posts' });
         }
+        
 
         const photos = await query(
             `SELECT p.id, p.owner_id, p.description, u.username
@@ -126,7 +125,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
              WHERE p.owner_id = ?
              ORDER BY p.id DESC
              LIMIT ? OFFSET ?`,
-            [userId, parseInt(limit, 10), offset]
+            [userId, limit, offset]
         );
 
         const [totalCount] = await query(
@@ -141,9 +140,9 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 
         res.json({
             photos: fullPhotosInfo,
-            total: totalCount[0],
-            page: parseInt(page, 10),
-            limit: parseInt(limit, 10)
+            total: totalCount.count,
+            page: page,
+            limit: limit,
         });
     } catch (error) {
         console.error(error);
@@ -155,7 +154,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 router.get('/:photoId', authenticateToken, async (req, res) => {
     try {
         const { photoId } = req.params;
-        const currentUserId = req.user?.id;
+        const currentUserId = req.user.id;
 
         const photos = await query(
             `SELECT p.id, p.owner_id, p.description, u.username
@@ -171,15 +170,14 @@ router.get('/:photoId', authenticateToken, async (req, res) => {
 
         const photo = photos[0];
 
-        if (currentUserId) {
-            const blockCheck = await query(
-                'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
-                [currentUserId, photo.owner_id, photo.owner_id, currentUserId]
-            );
-            if (blockCheck.length > 0) {
-                return res.status(403).json({ error: 'Cannot view this photo' });
-            }
+        const blockCheck = await query(
+            'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+            [currentUserId, photo.owner_id, photo.owner_id, currentUserId]
+        );
+        if (blockCheck.length > 0) {
+            return res.status(403).json({ error: 'Cannot view this photo' });
         }
+        
 
         const [likeCount] = await query(
             'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',

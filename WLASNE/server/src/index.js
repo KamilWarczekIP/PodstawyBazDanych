@@ -45,9 +45,10 @@ app.use('/users', require('./routes/users'));
 app.use('/photos', require('./routes/photos'));
 app.use('/comments', require('./routes/comments'));
 app.use('/likes', require('./routes/likes'));
-// app.use('/follows', require('./routes/follows'));
-// app.use('/blocks', require('./routes/blocks'));
-// app.use('/search', require('./routes/search'));
+app.use('/follows', require('./routes/follows'));
+app.use('/blocks', require('./routes/blocks'));
+app.use('/search', require('./routes/search'));
+// app.use('/admin', require('./routes/admin'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

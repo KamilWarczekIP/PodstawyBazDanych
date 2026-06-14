@@ -3,11 +3,15 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJh
 Content-Type: multipart/form-data; boundary=WebKitFormBoundaryX
 
 --WebKitFormBoundaryX
-Content-Disposition: form-data; name="description"
+Content-Disposition: form-data; name="body"
 Content-Type: application/json
 
 {
-    "description":"asd"
+    "description":"asd",
+    "tags": [
+        "hero",
+        "uno2"
+    ]
 }
 
 --WebKitFormBoundaryX

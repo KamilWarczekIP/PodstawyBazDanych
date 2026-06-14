@@ -5,21 +5,19 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
 // Like photo
-router.post('/', authenticateToken, [
-    body('photo_id').isInt()
-], async (req, res) => {
+router.post('/:photoId', authenticateToken, [], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-        const { photo_id } = req.body;
+        const { photoId } = req.params;
         const userId = req.user.id;
 
         const photos = await query(
             'SELECT owner_id FROM photos WHERE id = ?',
-            [photo_id]
+            [photoId]
         );
 
         if (photos.length === 0) {
@@ -27,7 +25,7 @@ router.post('/', authenticateToken, [
         }
 
         const blockCheck = await query(
-            'SELECT id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+            'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
             [userId, photos[0].owner_id, photos[0].owner_id, userId]
         );
 
@@ -37,7 +35,7 @@ router.post('/', authenticateToken, [
 
         const existingLike = await query(
             'SELECT id FROM likes WHERE photo_id = ? AND user_id = ?',
-            [photo_id, userId]
+            [photoId, userId]
         );
 
         if (existingLike.length > 0) {
@@ -46,7 +44,7 @@ router.post('/', authenticateToken, [
 
         const result = await query(
             'INSERT INTO likes (photo_id, user_id) VALUES (?, ?)',
-            [photo_id, userId]
+            [photoId, userId]
         );
 
         res.status(201).json({

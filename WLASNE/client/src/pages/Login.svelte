@@ -1,25 +1,28 @@
 <script>
-  import { authStore } from '../store.js';
+  import { authStore } from '../store.svelte.js';
+  import { authApi } from '../api.api.svelte.ts'
   import Card from '../components/Card.svelte';
   import Input from '../components/Input.svelte';
   import Button from '../components/Button.svelte';
   import Spinner from '../components/Spinner.svelte';
 
-  let email = '';
-  let password = '';
-  let error = '';
-  let isLoading = false;
+  let email = $state('');
+  let password = $state('');
+  let error = $state('');
+  let isLoading = $state(false);
 
   async function handleLogin() {
+    isLoading = true;
+    error = '';
     if (!email || !password) {
-      error = 'Please fill in all fields';
+      error = 'Uzupełnij pola';
+      isLoading = false;
       return;
     }
 
-    isLoading = true;
-    error = '';
 
     try {
+      authApi
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,8 +54,8 @@
 <div class="login-page">
   <Card variant="elevated" padding="lg">
     <div class="login-container">
-      <h1>Welcome Back</h1>
-      <p>Sign in to your account</p>
+      <h1>Witaj ponownie</h1>
+      <p>Zaloguj się na swoje konto</p>
 
       {#if error}
         <div class="error-message">{error}</div>
@@ -62,13 +65,13 @@
         <Input
           label="Email"
           type="email"
-          placeholder="your@email.com"
+          placeholder="adres@email.com"
           bind:value={email}
           disabled={isLoading}
         />
 
         <Input
-          label="Password"
+          label="Hasło"
           type="password"
           placeholder="••••••••"
           bind:value={password}
@@ -77,14 +80,14 @@
 
         <Button
           variant="filled"
-          label={isLoading ? 'Signing in...' : 'Sign In'}
+          label={isLoading ? 'Logowanie...' : 'Zaloguj'}
           disabled={isLoading}
           onClick={handleLogin}
         />
       </form>
 
       <div class="auth-links">
-        <p>Don't have an account? <a href="#/register">Sign up</a></p>
+        <p>Nie masz konta? <a href="#/register">Zarejstruj się</a></p>
       </div>
     </div>
   </Card>

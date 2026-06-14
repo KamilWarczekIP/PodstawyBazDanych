@@ -1,23 +1,19 @@
 import { get } from 'svelte/store';
-import { authStore } from './store.js';
+import { authStore } from './store.svelte.ts';
 
-const API_URL = '/api';
-
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint:string, options:any) {
   const auth = get(authStore);
   
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers
   };
 
-  if (auth.token) {
-    headers['Authorization'] = `Bearer ${auth.token}`;
+  if (auth.isAuthenticated) {
+    headers['Authorization'] = auth.token;
   }
 
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
+    const response = await fetch(endpoint, {
       headers
     });
 
@@ -27,23 +23,22 @@ async function apiRequest(endpoint, options = {}) {
           token: null,
           user: null,
           isAuthenticated: false,
-          isLoading: false,
-          error: 'Unauthorized'
         });
       }
       throw new Error(`API Error: ${response.statusText}`);
     }
 
-    return await response.json();
+    return response.json();
   } catch (error) {
     console.error('API Error:', error);
+    console.log('API call to: ', endpoint);
     throw error;
   }
 }
 
 // Auth APIs
 export const authAPI = {
-  register: (username, email, password) =>
+  register: async (username: string, email: string, password: string) =>
     apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ username, email, password })

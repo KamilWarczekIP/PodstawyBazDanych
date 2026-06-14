@@ -1,0 +1,8 @@
+GET http://localhost:3000/comments/16 HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJhZG1pbiIsImVtYWlsIjoia2FtaWxAd3AucGwiLCJpYXQiOjE3ODA5OTE3OTcsImV4cCI6MTc4MTA3ODE5N30.zfPgVj8-P1sy-81-2E67e58LT6TL2q7B_E-kGU5v05U
+Content-Type: application/json
+
+{
+    "limit":10,
+    "page":1
+}

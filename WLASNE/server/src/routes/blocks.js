@@ -4,11 +4,9 @@ const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
-const DEFAULT_AVATAR_URL = 'https://via.placeholder.com/40';
-
 // Block user
-router.post('/', authenticateToken, [
-    body('blocked_id').isInt()
+router.put('/', authenticateToken, [
+    body('blocked_id').exists().isInt()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -61,32 +59,48 @@ router.post('/', authenticateToken, [
 });
 
 // Unblock user
-router.delete('/:blockedId', authenticateToken, async (req, res) => {
-    try {
-        const { blockedId } = req.params;
-        const userId = req.user.id;
-
-        const result = await query(
-            'DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?',
-            [userId, blockedId]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Block not found' });
+router.delete('/', authenticateToken,
+     [
+        body('blocked_id').isInt()
+     ], 
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
+        try {
+            const { blockedId } = req.body;
+            const userId = req.user.id;
 
-        res.json({ message: 'User unblocked' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to unblock user' });
-    }
+            const result = await query(
+                'DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?',
+                [userId, blockedId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Block not found' });
+            }
+
+            res.json({ message: 'User unblocked' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Failed to unblock user' });
+        }
 });
 
 // Get blocked users list
-router.get('/list', authenticateToken, async (req, res) => {
+router.get('/list', authenticateToken, [
+    body('page').exists().isInt(),
+    body('limit').exists().isInt(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
+        
         const userId = req.user.id;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10 } = req.body;
         const offset = (page - 1) * limit;
 
         const blockedUsers = await query(
@@ -105,35 +119,14 @@ router.get('/list', authenticateToken, async (req, res) => {
         );
 
         res.json({
-            blockedUsers: blockedUsers.map(user => ({
-                ...user,
-                profile_image_url: DEFAULT_AVATAR_URL
-            })),
-            total: totalCount.count || totalCount[0].count,
-            page: parseInt(page, 10),
-            limit: parseInt(limit, 10)
+            blockedUsers: blockedUsers,
+            total: totalCount[0].count,
+            page: page,
+            limit: limit
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch blocked users' });
-    }
-});
-
-// Check if user is blocked
-router.get('/check/:blockedId', authenticateToken, async (req, res) => {
-    try {
-        const { blockedId } = req.params;
-        const userId = req.user.id;
-
-        const blocks = await query(
-            'SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
-            [userId, blockedId, blockedId, userId]
-        );
-
-        res.json({ isBlocked: blocks.length > 0 });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to check block status' });
     }
 });
 
