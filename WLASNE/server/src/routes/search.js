@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
 // Search photos by title, description, or tags
-router.get('/photos', authenticateToken, [
+router.post('/photos', authenticateToken, [
     body('queryTerm').exists().trim().isLength({ min: 3 }),
     body('tags').optional().isArray(),
     body('page').exists().isInt(),
@@ -34,8 +34,8 @@ router.get('/photos', authenticateToken, [
                 SELECT blocker_id FROM blocks WHERE blocked_id = ${currentUserId}
             )
              ORDER BY p.id DESC
-             LIMIT ?`,
-            [searchQuery, limit]
+             OFFSET ? LIMIT ?`,
+            [searchQuery, offset, limit]
         );
 
         // Also search by tags
@@ -52,10 +52,9 @@ router.get('/photos', authenticateToken, [
                 SELECT blocker_id FROM blocks WHERE blocked_id = ${currentUserId}
             )
              ORDER BY p.id DESC
-             LIMIT ?`,
-            [searchQuery, limit]
+             OFFSET ? LIMIT ?`,
+            [searchQuery, offset, limit]
         );
-        console.log(tagPhotos)
 
         // Combine and deduplicate results
         const allPhotos = [...photos];
@@ -68,9 +67,7 @@ router.get('/photos', authenticateToken, [
 
         res.json({
             photos: allPhotos.slice(offset, offset + limit),
-            query: queryTerm,
             page: page,
-            limit: limit,
         });
     } catch (error) {
         console.log(error)
@@ -79,7 +76,7 @@ router.get('/photos', authenticateToken, [
 });
 
 // Search users by username
-router.get('/users', authenticateToken, async (req, res) => {
+router.post('/users', authenticateToken, async (req, res) => {
     try {
         const { q, page = 1, limit = 10 } = req.query;
         const currentUserId = req.user?.id;
@@ -172,7 +169,7 @@ router.get('/users', authenticateToken, async (req, res) => {
 });
 
 // Search by tags
-router.get('/tags', authenticateToken, async (req, res) => {
+router.post('/tags', authenticateToken, async (req, res) => {
     try {
         const { q, page = 1, limit = 10 } = req.query;
 
@@ -199,10 +196,9 @@ router.get('/tags', authenticateToken, async (req, res) => {
 
         res.json({
             tags,
-            query: q,
             total: totalCount[0].count,
-            page: parseInt(page),
-            limit: parseInt(limit)
+            page,
+            limit,
         });
     } catch (error) {
         console.error(error);

@@ -89,7 +89,7 @@ router.delete('/', authenticateToken,
 });
 
 // Get blocked users list
-router.get('/list', authenticateToken, [
+router.post('/list', authenticateToken, [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], async (req, res) => {
@@ -110,7 +110,7 @@ router.get('/list', authenticateToken, [
                  SELECT blocked_id FROM blocks WHERE blocker_id = ?
              )
              LIMIT ? OFFSET ?`,
-            [userId, parseInt(limit, 10), offset]
+            [userId, limit, offset]
         );
 
         const [totalCount] = await query(
@@ -121,8 +121,7 @@ router.get('/list', authenticateToken, [
         res.json({
             blockedUsers: blockedUsers,
             total: totalCount[0].count,
-            page: page,
-            limit: limit
+            page: page
         });
     } catch (error) {
         console.error(error);

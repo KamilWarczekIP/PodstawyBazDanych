@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
 // Get photo comments
-router.get('/:photoId', authenticateToken, [
+router.post('/:photoId', authenticateToken, [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], async (req, res) => {
@@ -59,7 +59,6 @@ router.get('/:photoId', authenticateToken, [
             comments: comments,
             total: totalCount,
             page: page,
-            limit: limit,
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch comments' });
@@ -104,8 +103,7 @@ router.post('/', authenticateToken, [
         );
 
         res.status(201).json({
-            message: 'Comment created successfully',
-            commentId: result.insertId
+            message: 'Comment created successfully'
         });
     } catch (error) {
         console.error(error);

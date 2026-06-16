@@ -62,10 +62,10 @@ CREATE TABLE IF NOT EXISTS blocks (
     PRIMARY KEY (blocker_id, blocked_id)
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    jwt TEXT NOT NULL,
-    valid_until TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+-- CREATE TABLE IF NOT EXISTS sessions (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     jwt TEXT NOT NULL,
+--     valid_until TEXT NOT NULL,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- );

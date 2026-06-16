@@ -86,7 +86,7 @@ export const userAPI = {
     id:number, 
     username:string, 
     email:string, 
-    bio:string,
+    bio?:string,
     photoCount: number,
     followerCount: number,
     followingCount: number,
@@ -102,13 +102,15 @@ export const userAPI = {
     }),
 
   updateProfile: (username?:string, bio?:string, password?:string, email?:string) =>
-    apiRequest(`/users/${userId}`, {
+    apiRequest(`/users/`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        username,
+        bio,
+        password,
+        email,
+      })
     }),
-
-  getStats: (userId:number) =>
-    apiRequest(`/users/${userId}/stats`)
 };
 
 // Photo APIs
@@ -148,24 +150,35 @@ export const photoAPI = {
       method: 'DELETE'
     })
 };
-/*
+
 // Comment APIs
 export const commentAPI = {
-  getComments: (photoId, page = 1, limit = 10) =>
-    apiRequest(`/comments/photo/${photoId}?page=${page}&limit=${limit}`),
+  getComments: async (photoId:number, page :number, limit = 10) : Promise<
+  {
+            comments: {
+              id:number,
+              commenter_id: number,
+              comment:string,
+              username:string,
+            }[],
+            total: number,
+            page: number,
+        }>=>
+    apiRequest(`/comments/${photoId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        page,
+        limit,
+      }),
+    }),
 
-  createComment: (photoId, content) =>
+  createComment: async (photoId :number, content:string) : Promise<{message:string}> =>
     apiRequest('/comments', {
       method: 'POST',
       body: JSON.stringify({ photo_id: photoId, content })
     }),
-
-  deleteComment: (commentId) =>
-    apiRequest(`/comments/${commentId}`, {
-      method: 'DELETE'
-    })
 };
-*/
+
 // Like APIs
 export const likeAPI = {
   likePhoto: async (photoId: number) : Promise<{message:string}> =>
@@ -242,38 +255,50 @@ export const followAPI = {
         }),
       })
 };
-/*
 // Block APIs
 export const blockAPI = {
-  blockUser: (blockedId, reason = '') =>
+  blockUser: async (blockedId:number) : Promise<{message:string}> =>
     apiRequest('/blocks', {
-      method: 'POST',
-      body: JSON.stringify({ blocked_id: blockedId, reason })
+      method: 'PUT',
+      body: JSON.stringify({ blocked_id: blockedId })
     }),
 
-  unblockUser: (blockedId) =>
-    apiRequest(`/blocks/${blockedId}`, {
-      method: 'DELETE'
+  unblockUser: (blockedId:number) : Promise<{message:string}> =>
+    apiRequest(`/blocks`, {
+      method: 'DELETE',
+      body: JSON.stringify({ blocked_id: blockedId })
     }),
 
-  getBlockedUsers: (page = 1, limit = 10) =>
-    apiRequest(`/blocks/list?page=${page}&limit=${limit}`),
-
-  checkBlocked: (blockedId) =>
-    apiRequest(`/blocks/check/${blockedId}`)
+  getBlockedUsers: async (page:number, limit = 10) : Promise<{
+            blockedUsers: {
+              id: number,
+              username:string
+            }[],
+            total: number,
+            page: number,
+        }> =>
+    apiRequest(`/blocks/list`, {
+      method:"POST",
+      body: JSON.stringify({
+        page,
+        limit,
+      })
+    }),
+  
 };
 
+/*
 // Search APIs
 export const searchAPI = {
-  searchPhotos: (query, page = 1, limit = 10) =>
-    apiRequest(`/search/photos?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
-
-  searchUsers: (query, page = 1, limit = 10) =>
-    apiRequest(`/search/users?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
-
-  searchTags: (query, page = 1, limit = 10) =>
-    apiRequest(`/search/tags?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`)
-};
+  searchPhotos: (query:string, page:number, limit = 10) =>
+    apiRequest(`/search/photos`),
+  
+  searchUsers: (query:string, page:number, limit = 10) =>
+    apiRequest(`/search/users`),
+  
+  searchTags: (query:string, page:number, limit = 10) =>
+    apiRequest(`/search/tags`)
+  };
 
 // Admin APIs
 export const adminAPI = {

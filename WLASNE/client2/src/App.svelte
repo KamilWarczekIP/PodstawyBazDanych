@@ -7,6 +7,7 @@
     import Home from "./pages/Home.svelte";
     import Login from "./pages/Login.svelte";
     import Register from "./pages/Register.svelte";
+    import Search from "./pages/Search.svelte";
 
   let currentRoute = $state('login');
   let params = $state({});
@@ -60,6 +61,7 @@
       if(currentRoute !== 'register')
       {
         currentRoute = 'login';
+        hasMenu = 'false';
       }
     }
   }
@@ -69,9 +71,7 @@
 
 <svelte:window onhashchange={parseRoute} />
 
-{#if hasMenu === true}
-  <MenuBar/>
-{/if}
+
 
 {#if currentRoute === 'login'}
   <Login/>
@@ -84,13 +84,17 @@
 {:else if currentRoute === 'settings'}
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'search'}
-  <h1>{currentRoute}</h1>
+  <Search/>
 {:else if currentRoute === 'upload'}
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'photo'}
   <h1>{currentRoute}</h1>
 {:else}
   <h1>ERROR: {currentRoute}</h1>
+{/if}
+
+{#if hasMenu === true}
+  <MenuBar/>
 {/if}
 
 <style>

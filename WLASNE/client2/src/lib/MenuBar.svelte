@@ -46,5 +46,7 @@
         display: flex;
         justify-content: space-evenly;
         align-items: center;
+        position: fixed;
+        bottom:0;
     }
 </style>
