@@ -1,27 +1,36 @@
 <script>
   
+  import "./utils.css";
+
   // Import all pages
-  import MenuBar from "./lib/MenuBar.svelte";
+    import MenuBar from "./lib/MenuBar.svelte";
+    import Home from "./pages/Home.svelte";
     import Login from "./pages/Login.svelte";
+    import Register from "./pages/Register.svelte";
 
   let currentRoute = $state('login');
   let params = $state({});
+  let hasMenu = $state(false)
 
   function parseRoute() {
-    const hash = window.location.pathname;
+    const hash = window.location.hash;
     const [path, ...queryParts] = hash.split('?');
     const pathParts = path.split('/').filter(Boolean);
-
+    
+    
+    hasMenu = true;
     if (pathParts.length === 0) {
       currentRoute = 'home';
     } else {
-      const route = pathParts[0];
+      const route = pathParts[0].substring(1);
       switch (route) {
         case 'login':
           currentRoute = 'login';
+          hasMenu = false;
           break;
         case 'register':
           currentRoute = 'register';
+          hasMenu = false;
           break;
         case 'home':
         case '':
@@ -42,6 +51,15 @@
           break;
         default:
           currentRoute = 'login';
+          hasMenu = false;
+      }
+    }
+
+    if(localStorage.getItem("AUTH") == null)
+    {
+      if(currentRoute !== 'register')
+      {
+        currentRoute = 'login';
       }
     }
   }
@@ -51,32 +69,28 @@
 
 <svelte:window onhashchange={parseRoute} />
 
-
+{#if hasMenu === true}
+  <MenuBar/>
+{/if}
 
 {#if currentRoute === 'login'}
   <Login/>
 {:else if currentRoute === 'register'}
-  <h1>{currentRoute}</h1>
+  <Register/>
 {:else if currentRoute === 'home'}
-<MenuBar/>
-  <h1>{currentRoute}</h1>
+  <Home/>
 {:else if currentRoute === 'profile'}
-<MenuBar/>
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'settings'}
-<MenuBar/>
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'search'}
-<MenuBar/>
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'upload'}
-<MenuBar/>
   <h1>{currentRoute}</h1>
 {:else if currentRoute === 'photo'}
-<MenuBar/>
   <h1>{currentRoute}</h1>
 {:else}
-  <h1>{currentRoute}</h1>
+  <h1>ERROR: {currentRoute}</h1>
 {/if}
 
 <style>

@@ -1,0 +1,31 @@
+.hbox {
+    display: flex;
+    flex-direction: column;
+}
+
+.vbox {
+    display: flex;
+    flex-direction: row;
+}
+
+.hpad {
+    margin-top: 1rem;
+}
+.vpad {
+    margin-left: 1rem;
+}
+
+.error-message {
+padding: 1rem;
+background-color: rgba(179, 38, 30, 0.1);
+border: 1px solid var(--error, #b3261e);
+color: var(--error, #b3261e);
+font-size: 14px;
+}
+
+a {
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}

@@ -1,5 +1,7 @@
 const express = require('express');
 const fs = require('fs');
+const fsp = require('fs/promises');
+const path = require('path');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -33,13 +35,15 @@ router.post('/register', [
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-                const result = await query(
+        const result = await query(
             'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
             [username, email, hashedPassword]
         );
-        
-        fs.mkdir(path.join(process.cwd(), 'uploads', result.insertId + ""))
-        
+        await fsp.mkdir(path.join(process.cwd(), 'uploads', result.insertId + ""))
+        await fsp.copyFile(
+                        path.join(process.cwd(), 'uploads', "user.jpg"),
+                        path.join(process.cwd(), 'uploads', result.insertId + "", "user.jpg")
+                        )
 
         res.status(201).json({
             message: 'User registered successfully',
@@ -88,7 +92,7 @@ router.post('/login', [
             { expiresIn: process.env.JWT_EXPIRATION + "h" }
         );
 
-        res.json({
+        res.status(210).json({
             token,
             user: {
                 id: user.id,

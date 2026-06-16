@@ -4,18 +4,8 @@ const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
-
-function formatPhoto(photo) {
-    return {
-        id: photo.id,
-        user_id: photo.owner_id,
-        username: photo.username,
-        description: photo.description || '',
-    }
-}
-
 // Follow user
-router.post('/', authenticateToken, [
+router.put('/', authenticateToken, [
     body('followed_id').exists().isInt()
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -87,7 +77,7 @@ router.delete('/',[
 });
 
 // Get followers
-router.get('/followers/:userId', [
+router.post('/followers/:userId', [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], authenticateToken, async (req, res) => {
@@ -129,7 +119,7 @@ router.get('/followers/:userId', [
 });
 
 // Get following
-router.get('/following/:userId', [
+router.post('/following/:userId', [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], authenticateToken, async (req, res) => {
@@ -171,7 +161,7 @@ router.get('/following/:userId', [
 });
 
 // Get feed (photos from followed users)
-router.get('/feed', authenticateToken, [
+router.post('/feed', authenticateToken, [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], async (req, res) => {
@@ -223,7 +213,12 @@ router.get('/feed', authenticateToken, [
             );
 
             return {
-                ...formatPhoto(photo),
+                photo: {
+                    id: photo.id,
+                    user_id: photo.owner_id,
+                    username: photo.username,
+                    description: photo.description || '',
+                },
                 likeCount: likeCount.count,
                 commentCount: commentCount.count,
                 userLiked: userLike.length > 0
@@ -233,8 +228,8 @@ router.get('/feed', authenticateToken, [
         res.json({
             photos: enhancedPhotos,
             total: totalCount.count,
-            page: parseInt(page, 10),
-            limit: parseInt(limit, 10)
+            page: page,
+            limit: limit,
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch feed' });

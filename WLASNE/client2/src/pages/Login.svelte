@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Card from "../components/Card.svelte";
-    import Input from "../components/Input.svelte";
-    import Button from "../components/Button.svelte";
+    import Card from "@smui/card";
+    import Textfield from "@smui/textfield";
+    import Button, { Label } from "@smui/button";
 
     import { authAPI } from "../api.svelte";
 
@@ -38,31 +38,33 @@
         }
 
         authAPI.login(login.email, login.password).then((data) => {
+            localStorage.setItem("AUTH", JSON.stringify(data))
             login.isPending = false;
-            console.log(data.token)
+            window.location.hash = '';
         }).catch((e) => {
-            console.log(e)
-            login.error = e;
-            setTimeout(() => {login.isPending = false}, 1000)
+            login.error = "Błąd logowania. Niepoprawne dane.";
+            window.location.hash = '#login';
+            localStorage.removeItem("AUTH")
+            setTimeout(() => {login.isPending = false}, 2000)
         });
 
 
         
     }
 </script>
+<div class="page">
+  <Card padded>
+    <div class="hbox">
 
-<div class="login-page">
-  <Card variant="elevated" padding="lg">
-    <div class="login-container">
-      <h1>Witaj ponownie</h1>
+    <h1>Witaj ponownie</h1>
       <p>Zaloguj się na swoje konto</p>
 
       {#if login.error}
         <div class="error-message">{login.error}</div>
       {/if}
 
-      <form onsubmit={handleLogin} class="login-form">
-        <Input
+      <form onsubmit={handleLogin} class="hbox">
+        <Textfield
           label="Email"
           type="email"
           placeholder="adres@email.com"
@@ -70,55 +72,39 @@
           disabled={login.isPending}
         />
 
-        <Input
+        <Textfield
           label="Hasło"
           type="password"
           placeholder="••••••••"
           bind:value={login.password}
           disabled={login.isPending}
         />
+        <div class="hpad"></div>
 
         <Button
-          variant="filled"
-          label={login.isPending ? 'Logowanie...' : 'Zaloguj'}
+          variant="raised"
           disabled={login.isPending}
-          onClick={() => handleLogin(new SubmitEvent("asd"))}
-        />
+          onclick={() => handleLogin(new SubmitEvent("asd"))}
+        >
+          <Label>{login.isPending ? 'Logowanie...' : 'Zaloguj'}</Label>
+        </Button>
       </form>
 
       <div class="auth-links">
-        <p>Nie masz konta? <a href="/register">Zarejstruj się</a></p>
+        <p>Nie masz konta? <a href="#register">Zarejstruj się</a></p>
       </div>
-    </div>
+
+      </div>
   </Card>
 </div>
-
 <style>
-  .login-page {
+  div.page {
+    width: 100dvw;
+    height: 100dvh;
     display: flex;
-    align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(233, 30, 99, 0.1) 0%, rgba(33, 150, 243, 0.1) 100%);
+    align-items: center;
   }
-
-  .login-container {
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .login-container h1 {
-    margin: 0 0 var(--spacing-sm) 0;
-    text-align: center;
-  }
-
-  .login-container > p {
-    text-align: center;
-    color: var(--outline);
-    margin: 0 0 var(--spacing-lg) 0;
-  }
-
   .error-message {
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
@@ -127,26 +113,5 @@
     border-radius: var(--radius-md);
     color: var(--error, #b3261e);
     font-size: 14px;
-  }
-
-  .login-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-  }
-
-  .auth-links {
-    text-align: center;
-    font-size: 14px;
-  }
-
-  .auth-links a {
-    color: var(--primary, #e91e63);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 </style>

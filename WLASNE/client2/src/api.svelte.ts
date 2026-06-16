@@ -1,13 +1,28 @@
-let auth = $state({
-  isAuthenticated: false,
+type AuthInfo = {
+  token: string,
+  user?: {
+    id: number,
+    email: string,
+    username: string
+  },
+};
+
+type Photo = {
+  id: number,
+  user_id: number,
+  username: string,
+  description: string,
+};
+
+let auth:AuthInfo = $state({
   token: '',
-  user: -1,
+  user: undefined,
 })
 
 let API_URL = "http://localhost:3000"
 
 async function apiRequest(endpoint:string, options: {
-  body: string,
+  body?: string,
   method: "POST" | "GET" | "PUT" | "DELETE",
 }) {
 
@@ -20,12 +35,13 @@ async function apiRequest(endpoint:string, options: {
     'Content-Type': 'application/json',
   };
 
-  if (auth.isAuthenticated) {
+  if (auth.token != '') {
     headers['Authorization'] = auth.token;
   }
 
   try {
     console.log('API call to: ', endpoint);
+    console.info($state.snapshot(auth))
     const response = await fetch(API_URL+endpoint, {
       headers,
       ...options,
@@ -35,15 +51,14 @@ async function apiRequest(endpoint:string, options: {
       if (response.status === 401) {
         auth = {
           token: '',
-          user: -1,
-          isAuthenticated: false,
+          user: undefined,
         };
         localStorage.removeItem("AUTH");
       }
       throw new Error(`API Error: ${response.statusText}`);
     }
-
-    return await response.json();
+    
+    return response.json();
   } catch (error) {
     console.error('API Error:', error);
     throw error;
@@ -52,19 +67,13 @@ async function apiRequest(endpoint:string, options: {
 
 // Auth APIs
 export const authAPI = {
-  register: async (username: string, email: string, password: string) =>
+  register: async (username: string, email: string, password: string): Promise<{}> =>
     apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ username, email, password })
     }),
 
-  login: async (email: string, password: string): Promise<{ 
-            token:string,
-            user: {
-                id: number,
-                username: string,
-                email: string
-            }}> =>
+  login: async (email: string, password: string): Promise<AuthInfo> =>
     apiRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
@@ -73,10 +82,26 @@ export const authAPI = {
 
 // User APIs
 export const userAPI = {
-  getProfile: (userId: number) =>
-    apiRequest(`/users/${userId}`),
+  getProfile: async (userId: number): Promise<{
+    id:number, 
+    username:string, 
+    email:string, 
+    bio:string,
+    photoCount: number,
+    followerCount: number,
+    followingCount: number,
+    isFollowed:boolean,
+    isFollowing:boolean}> =>
+    apiRequest(`/users/${userId}`, {method: "GET"}),
 
-  updateProfile: (userId:number, data:any) =>
+
+  changePhoto: (photoId:number) =>
+    apiRequest(`/users/photo`, {
+      method: 'PUT',
+      body: JSON.stringify({profile_photo_id:photoId})
+    }),
+
+  updateProfile: (username?:string, bio?:string, password?:string, email?:string) =>
     apiRequest(`/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(data)
@@ -85,27 +110,45 @@ export const userAPI = {
   getStats: (userId:number) =>
     apiRequest(`/users/${userId}/stats`)
 };
-/*
+
 // Photo APIs
 export const photoAPI = {
-  getUserPhotos: (userId, page = 1, limit = 10) =>
-    apiRequest(`/photos/user/${userId}?page=${page}&limit=${limit}`),
+  getUserPhotos: async (userId:number, page:number, limit = 10) : Promise<{
+      photos: 
+        Photo[],
+      total: number,
+      page: number
+  }> =>
+    apiRequest(`/photos/user/${userId}`, {
+        method: "POST",
+        body: JSON.stringify({
+          page,
+          limit,
+        })
+      }),
 
-  getPhoto: (photoId) =>
-    apiRequest(`/photos/${photoId}`),
+  getPhoto: async (photoId: number) : Promise<{
+      photo: Photo,
+      likeCount: number,
+      commentCount: number,
+      userLiked: boolean,
+      tags: string[]
+  }> => apiRequest(`/photos/${photoId}`, {
+    method:"GET",
+  }),
 
-  createPhoto: (data) =>
+  createPhoto: async (jpeg_data:any, description:string, tags: string[]) : Promise<{message:string, photoId:number}> =>
     apiRequest('/photos', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(jpeg_data) // NO WAY
     }),
 
-  deletePhoto: (photoId) =>
+  deletePhoto: async (photoId:number) : Promise<{message:string}>=>
     apiRequest(`/photos/${photoId}`, {
       method: 'DELETE'
     })
 };
-
+/*
 // Comment APIs
 export const commentAPI = {
   getComments: (photoId, page = 1, limit = 10) =>
@@ -122,74 +165,84 @@ export const commentAPI = {
       method: 'DELETE'
     })
 };
-
+*/
 // Like APIs
 export const likeAPI = {
-  likePhoto: (photoId) =>
-    apiRequest('/likes', {
-      method: 'POST',
-      body: JSON.stringify({ photo_id: photoId })
-    }),
-
-  unlikePhoto: (photoId) =>
+  likePhoto: async (photoId: number) : Promise<{message:string}> =>
     apiRequest(`/likes/${photoId}`, {
-      method: 'DELETE'
+      method: 'PUT',
+      body: JSON.stringify({})
     }),
 
-  getLikeCount: (photoId) =>
-    apiRequest(`/likes/${photoId}`)
+  unlikePhoto: async (photoId: number) : Promise<{message:string}> =>
+    apiRequest(`/likes/${photoId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({})
+    }),
+  getCount: async (photoId: number) : Promise<{count:number}> => 
+    apiRequest(`/likes/${photoId}`, {
+      method: "GET"
+    }),
 };
 
-// Friend APIs
-export const friendAPI = {
-  sendRequest: (receiverId) =>
-    apiRequest('/friends/request', {
-      method: 'POST',
-      body: JSON.stringify({ receiver_id: receiverId })
-    }),
-
-  acceptRequest: (requestId) =>
-    apiRequest(`/friends/accept/${requestId}`, {
-      method: 'POST'
-    }),
-
-  rejectRequest: (requestId) =>
-    apiRequest(`/friends/reject/${requestId}`, {
-      method: 'POST'
-    }),
-
-  removeFriend: (friendId) =>
-    apiRequest(`/friends/${friendId}`, {
-      method: 'DELETE'
-    }),
-
-  getFriends: (userId, page = 1, limit = 10) =>
-    apiRequest(`/friends/${userId}?page=${page}&limit=${limit}`)
-};
 
 // Follow APIs
 export const followAPI = {
-  followUser: (followingId) =>
+  followUser: async (followingId:number) : Promise<{message:string}> =>
     apiRequest('/follows', {
-      method: 'POST',
-      body: JSON.stringify({ following_id: followingId })
+      method: 'PUT',
+      body: JSON.stringify({ followed_id: followingId })
     }),
 
-  unfollowUser: (followingId) =>
-    apiRequest(`/follows/${followingId}`, {
-      method: 'DELETE'
+  unfollowUser: async(followingId:number) : Promise<{message:string}> =>
+    apiRequest(`/follows`, {
+      method: 'DELETE',
+      body: JSON.stringify({ followed_id: followingId })
     }),
 
-  getFollowers: (userId, page = 1, limit = 10) =>
-    apiRequest(`/follows/${userId}/followers?page=${page}&limit=${limit}`),
+  getFollowers: async (userId:number, page:number, limit = 10) =>
+    apiRequest(`/follows/followers/${userId}`, {
+        method: "POST",
+        body: JSON.stringify({
+          page,
+          limit,
+        }),
+      }),
 
-  getFollowing: (userId, page = 1, limit = 10) =>
-    apiRequest(`/follows/${userId}/following?page=${page}&limit=${limit}`),
+  getFollowing: async (userId:number, page:number, limit = 10) =>
+    apiRequest(`/follows/following/${userId}`, {
+        method: "POST",
+        body: JSON.stringify({
+          page,
+          limit,
+        }),
+      }),
 
-  getFeed: (page = 1, limit = 10) =>
-    apiRequest(`/follows/feed?page=${page}&limit=${limit}`)
+  getFeed: async (page: number, limit = 10) : Promise<{
+      photos: {
+        photo: {
+            id: number,
+            user_id: number,
+            username: string,
+            description: string,
+        },
+        likeCount: number,
+        commentCount: number,
+        userLiked: boolean
+      }[],
+      total: number,
+      page: number,
+      limit: number,
+  }> =>
+    apiRequest(`/follows/feed`, {
+        method: "POST",
+        body: JSON.stringify({
+          page,
+          limit,
+        }),
+      })
 };
-
+/*
 // Block APIs
 export const blockAPI = {
   blockUser: (blockedId, reason = '') =>

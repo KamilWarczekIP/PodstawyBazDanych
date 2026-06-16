@@ -4,8 +4,8 @@ const bcrypt = require('bcryptjs');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
-
-const DEFAULT_AVATAR = 'https://via.placeholder.com/80';
+const fsp = require('fs/promises');
+const path = require('path');
 
 // Get user profile
 router.get('/:userId', authenticateToken, async (req, res) => {
@@ -70,12 +70,50 @@ router.get('/:userId', authenticateToken, async (req, res) => {
     }
 });
 
+//Update user photo
+router.put('/photo', authenticateToken, [
+    body('profile_photo_id').optional().trim().escape().isInt(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+        const userId = req.user.id;
+        const { profile_photo_id } = req.body;
+
+        if(profile_photo_id != null) {
+            const photoOwnershipCheck = await query(
+            'SELECT id FROM photos WHERE owner_id = ? AND id = ?',
+            [userId, profile_photo_id]
+            );
+            if(photoOwnershipCheck.length != 1) {
+                return res.status(402).json({ error: "Zdjęcie o tym id nie należy do tego użytkownika" });
+            }
+            await fsp.copyFile(
+                path.join(process.cwd(), 'uploads', userId + "", profile_photo_id + ".jpg"),
+                path.join(process.cwd(), 'uploads', userId + "", "user.jpg")
+                )
+                    
+        } else {
+            await fsp.copyFile(
+                path.join(process.cwd(), 'uploads', "user.jpg"),
+                path.join(process.cwd(), 'uploads', userId + "", "user.jpg")
+                )
+        }
+        res.status(200).json({message: "Photo changed"})
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed change user photo' });
+    }
+});
+
 // Update user profile
-router.put('/:userId', authenticateToken, [
+router.put('/', authenticateToken, [
     body('username').optional().trim().escape(),
     body('bio').optional().trim().escape(),
     body('password').optional().trim().escape(),
-    body('email').optional().trim().escape()
+    body('email').optional().trim().escape(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -83,12 +121,7 @@ router.put('/:userId', authenticateToken, [
     }
 
     try {
-        const { userId } = req.params;
-        const currentUserId = req.user.id;
-
-        if (parseInt(userId, 10) !== currentUserId) {
-            return res.status(403).json({ error: 'Unauthorized to change this user account' });
-        }
+        const { userId } = req.user.id;
 
         const { username, bio, password, email } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -108,6 +141,7 @@ router.put('/:userId', authenticateToken, [
             'SELECT id, username, email, bio FROM users WHERE id = ?',
             [userId]
         );
+        
 
         res.json({ user: { ...updatedUser } });
     } catch (error) {

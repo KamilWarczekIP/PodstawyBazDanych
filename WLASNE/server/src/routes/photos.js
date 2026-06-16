@@ -84,17 +84,9 @@ async (req, res) => {
     }
 });
 
-function parsePhotoRow(photo) {
-    return {
-        id: photo.id,
-        user_id: photo.owner_id,
-        username: photo.username,
-        description: photo.description || '',
-    };
-}
 
 // Get user posts
-router.get('/user/:userId', authenticateToken, [
+router.post('/user/:userId', authenticateToken, [
     body('page').exists().isInt(),
     body('limit').exists().isInt(),
 ], async (req, res) => {
@@ -105,7 +97,7 @@ router.get('/user/:userId', authenticateToken, [
     try {
         const { userId } = req.params;
         const currentUserId = req.user.id;
-        const { page = 1, limit = 10 } = req.body;
+        const { page, limit } = req.body;
         const offset = (page - 1) * limit;
 
 
@@ -132,17 +124,21 @@ router.get('/user/:userId', authenticateToken, [
             'SELECT COUNT(*) as count FROM photos WHERE owner_id = ?',
             [userId]
         );
-        const fullPhotosInfo = await Promise.all(photos.map(async (photo) => {
-            return {
-                ...parsePhotoRow(photo)
-            }
-        }));
+        // const fullPhotosInfo = await Promise.all(photos.map(async (photo) => {
+        //     return {
+                
+        //         id: photo.id,
+        //         user_id: photo.owner_id,
+        //         username: photo.username,
+        //         description: photo.description || '',
+    
+        //     }
+        // }));
 
         res.json({
-            photos: fullPhotosInfo,
+            photos: photos,
             total: totalCount.count,
-            page: page,
-            limit: limit,
+            page: page
         });
     } catch (error) {
         console.error(error);
@@ -150,7 +146,7 @@ router.get('/user/:userId', authenticateToken, [
     }
 });
 
-// Get single post
+// Get single photo
 router.get('/:photoId', authenticateToken, async (req, res) => {
     try {
         const { photoId } = req.params;
@@ -204,7 +200,12 @@ router.get('/:photoId', authenticateToken, async (req, res) => {
         }
 
         res.json({
-            ...parsePhotoRow(photo),
+            photo: {
+                id: photo.id,
+                user_id: photo.owner_id,
+                username: photo.username,
+                description: photo.description || '',
+            },
             likeCount: likeCount.count,
             commentCount: commentCount.count,
             userLiked,

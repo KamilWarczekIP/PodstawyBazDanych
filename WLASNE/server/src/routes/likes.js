@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 
 // Like photo
-router.post('/:photoId', authenticateToken, [], async (req, res) => {
+router.put('/:photoId', authenticateToken, [], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -48,8 +48,7 @@ router.post('/:photoId', authenticateToken, [], async (req, res) => {
         );
 
         res.status(201).json({
-            message: 'Photo liked successfully',
-            likeId: result.insertId
+            message: 'Photo liked successfully'
         });
     } catch (error) {
         console.error(error);
@@ -85,20 +84,20 @@ router.delete('/:photoId', authenticateToken, async (req, res) => {
 });
 
 // Get photo likes count
-// router.get('/:photoId', async (req, res) => {
-//     try {
-//         const { photoId } = req.params;
+router.get('/:photoId', async (req, res) => {
+    try {
+        const { photoId } = req.params;
 
-//         const [result] = await query(
-//             'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',
-//             [photoId]
-//         );
+        const [result] = await query(
+            'SELECT COUNT(*) as count FROM likes WHERE photo_id = ?',
+            [photoId]
+        );
 
-//         res.json({ count: result.count });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Failed to fetch likes count' });
-//     }
-// });
+        res.json({ count: result.count });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch likes count' });
+    }
+});
 
 module.exports = router;
