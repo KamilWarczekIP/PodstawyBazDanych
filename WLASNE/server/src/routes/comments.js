@@ -17,7 +17,7 @@ router.post('/:photoId', authenticateToken, [
 
         const { photoId } = req.params;
         const currentUserId = req.user.id;
-        const { page = 1, limit = 10 } = req.body;
+        const { page, limit } = req.body;
 
         const photos = await query(
             'SELECT owner_id FROM photos WHERE id = ?',
@@ -54,10 +54,11 @@ router.post('/:photoId', authenticateToken, [
             'SELECT COUNT(*) as count FROM comments WHERE photo_id = ?',
             [photoId]
         );
-
         res.json({
-            comments: comments,
-            total: totalCount,
+            comments: comments.map(c => ({
+                ...c
+            })),
+            total: totalCount.count,
             page: page,
         });
     } catch (error) {

@@ -2,7 +2,7 @@
     import Card from "@smui/card";
     import Button, {Icon, Label} from "@smui/button";
     import Chip, { Set, Text } from '@smui/chips';
-    import { likeAPI } from "../api.svelte";
+    import { getPhotoURL, getProfilePhotoURL, likeAPI } from "../api.svelte";
 
     let { userId, photoId, likesCount, liked,
          description, tags, username } : 
@@ -12,19 +12,23 @@
 
     // svelte-ignore state_referenced_locally
     likeAPI.getCount(photoId).then(o => {likesCount = o.count});
-    let src = "http://" + window.location.hostname + ":8089/" + userId + "/" + photoId +".jpg"
-    let srcUser = "http://" + window.location.hostname + ":8089/" + userId + "/" + "user.jpg"
+    let src = getPhotoURL(userId, photoId)
+    let srcUser = getProfilePhotoURL(userId);
 </script>
 
 <div class="bound">
     <Card padded>
         <div class="hbox">
-            <div class="vbox" style="align-items: center;">
-                <img class="user" src="{srcUser}" alt="Zdjęcie użytkownika {username}">
-                <div class="vpad"></div>
-                <h2> {username} </h2>
-            </div>
-            <img class="main" {src} alt="{description}">
+            <a href="#profile?id={userId}">
+                <div class="vbox" style="align-items: center;">
+                    <img class="user" src="{srcUser}" alt="Zdjęcie użytkownika {username}">
+                    <div class="vpad"></div>
+                    <h2> {username} </h2>
+                </div>
+            </a>
+            <a href="#photo?id={photoId}">
+                <img class="main" {src} alt="{description}">
+            </a>
             <div class="hpad"></div>
             <div class="vbox" style="justify-content: space-between;">
                 <div class="tags">
@@ -76,6 +80,10 @@
         aspect-ratio: 1;
         height: clamp(16px, 8dvh, 128px);
         border-radius: 50%;
+    }
+    a {
+        text-decoration: none;
+        color: unset;
     }
 
 </style>

@@ -113,7 +113,6 @@ router.put('/', authenticateToken, [
     body('username').optional().trim().escape(),
     body('bio').optional().trim().escape(),
     body('password').optional().trim().escape(),
-    body('email').optional().trim().escape(),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -121,18 +120,23 @@ router.put('/', authenticateToken, [
     }
 
     try {
-        const { userId } = req.user.id;
+        const userId = req.user.id;
 
-        const { username, bio, password, email } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
+        let { username, bio, password } = req.body;
+        
+        const hashedPassword = (password == undefined ? null : await bcrypt.hash(password, 10));
+        
+        if(username == undefined)
+            username = null;
+        if(bio == undefined)
+            bio = null;
 
         await query(
             'UPDATE users SET username = COALESCE(?, username), bio = COALESCE(?, bio) \
-            , email = COALESCE(?, email), password = COALESCE(?, password) WHERE id = ?',
-            [   username || null, 
-                bio || null, 
-                email || null,
-                hashedPassword || null,
+            , password = COALESCE(?, password) WHERE id = ?',
+            [   username, 
+                bio, 
+                hashedPassword,
                 userId
             ]
         );
@@ -143,7 +147,7 @@ router.put('/', authenticateToken, [
         );
         
 
-        res.json({ user: { ...updatedUser } });
+        res.json({ message: "User profile updated" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update profile' });

@@ -7,9 +7,9 @@ type AuthInfo = {
   },
 };
 
-type Photo = {
+export type Photo = {
   id: number,
-  user_id: number,
+  owner_id: number,
   username: string,
   description: string,
 };
@@ -19,7 +19,7 @@ let auth:AuthInfo = $state({
   user: undefined,
 })
 
-let API_URL = "http://localhost:3000"
+export const API_URL = "http://localhost:3000"
 
 async function apiRequest(endpoint:string, options: {
   body?: string,
@@ -40,8 +40,8 @@ async function apiRequest(endpoint:string, options: {
   }
 
   try {
-    console.log('API call to: ', endpoint);
-    console.info($state.snapshot(auth))
+    // console.log('API call to: ', endpoint);
+    // console.info($state.snapshot(auth))
     const response = await fetch(API_URL+endpoint, {
       headers,
       ...options,
@@ -95,20 +95,19 @@ export const userAPI = {
     apiRequest(`/users/${userId}`, {method: "GET"}),
 
 
-  changePhoto: (photoId:number) =>
+  changePhoto: (photoId:number) : Promise<{message:string}> =>
     apiRequest(`/users/photo`, {
       method: 'PUT',
       body: JSON.stringify({profile_photo_id:photoId})
     }),
 
-  updateProfile: (username?:string, bio?:string, password?:string, email?:string) =>
+  updateProfile: (username?:string, bio?:string, password?:string) : Promise<{message:string}> =>
     apiRequest(`/users/`, {
       method: 'PUT',
       body: JSON.stringify({
         username,
         bio,
         password,
-        email,
       })
     }),
 };
@@ -134,16 +133,16 @@ export const photoAPI = {
       likeCount: number,
       commentCount: number,
       userLiked: boolean,
-      tags: string[]
+      tags: {id:number, name:string}[]
   }> => apiRequest(`/photos/${photoId}`, {
     method:"GET",
   }),
 
-  createPhoto: async (jpeg_data:any, description:string, tags: string[]) : Promise<{message:string, photoId:number}> =>
-    apiRequest('/photos', {
-      method: 'POST',
-      body: JSON.stringify(jpeg_data) // NO WAY
-    }),
+  // createPhoto: async (jpeg_data:any, description:string, tags: string[]) : Promise<{message:string, photoId:number}> =>
+  //   apiRequest('/photos', {
+  //     method: 'POST',
+  //     body: JSON.stringify(jpeg_data) // NO WAY
+  //   }),
 
   deletePhoto: async (photoId:number) : Promise<{message:string}>=>
     apiRequest(`/photos/${photoId}`, {
@@ -338,3 +337,12 @@ export const adminAPI = {
     })
 };
 */
+export function getUserID() : number|undefined {
+  return auth.user?.id;
+}
+export function getPhotoURL(userId:number, photoId:number) : string  {
+ return "http://" + window.location.hostname + ":8089/" + userId + "/" + photoId + ".jpg";
+}
+export function getProfilePhotoURL(userId:number | undefined) : string {
+  return "http://" + window.location.hostname + ":8089/" + userId + "/" + "user.jpg";
+}

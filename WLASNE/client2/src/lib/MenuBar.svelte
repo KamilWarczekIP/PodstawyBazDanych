@@ -18,14 +18,14 @@
       'Strona główna':'#home',
       'Szukaj': '#search',
       'Dodaj':'#upload',
-      'Moje konto':'#profile',
+      'Moje konto':'#settings',
     };
 </script>
 
 <header>
     <BottomAppBar
       variant="static"
-      color='primary'
+      color="primary"
     >
     <TabBar tabs={['Strona główna', 'Szukaj', 'Dodaj', 'Moje konto']} bind:activeTab>
     {#snippet tab(tab: any)}
@@ -48,5 +48,6 @@
         align-items: center;
         position: fixed;
         bottom:0;
+        background-color: white;
     }
 </style>

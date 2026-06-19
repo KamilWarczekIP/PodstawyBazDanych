@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   
   import "./utils.css";
 
@@ -8,9 +8,14 @@
     import Login from "./pages/Login.svelte";
     import Register from "./pages/Register.svelte";
     import Search from "./pages/Search.svelte";
+    import Upload from "./pages/Upload.svelte";
+    import Settings from "./pages/Settings.svelte";
+    import Profile from "./pages/Profile.svelte";
+    import PhotoDetails from "./pages/PhotoDetails.svelte";
+    import { getUserID } from "./api.svelte";
 
   let currentRoute = $state('login');
-  let params = $state({});
+  let params : any = $state({});
   let hasMenu = $state(false)
 
   function parseRoute() {
@@ -37,8 +42,14 @@
         case '':
           currentRoute = 'home';
           break;
+        case 'settings':
+          currentRoute = 'settings';
+          break;
         case 'profile':
           currentRoute = 'profile';
+          params[queryParts[0].split("=")[0]] = parseInt(queryParts[0].split("=")[1], 10);
+          if(params['id'] === getUserID())
+            currentRoute = 'settings'
           break;
         case 'search':
           currentRoute = 'search';
@@ -48,7 +59,7 @@
           break;
         case 'photo':
           currentRoute = 'photo';
-          params = { id: pathParts[1] };
+          params[queryParts[0].split("=")[0]] = parseInt(queryParts[0].split("=")[1], 10);
           break;
         default:
           currentRoute = 'login';
@@ -61,7 +72,7 @@
       if(currentRoute !== 'register')
       {
         currentRoute = 'login';
-        hasMenu = 'false';
+        hasMenu = false;
       }
     }
   }
@@ -80,15 +91,15 @@
 {:else if currentRoute === 'home'}
   <Home/>
 {:else if currentRoute === 'profile'}
-  <h1>{currentRoute}</h1>
+<Profile userId={params.id}/>
 {:else if currentRoute === 'settings'}
-  <h1>{currentRoute}</h1>
+<Settings/>
 {:else if currentRoute === 'search'}
   <Search/>
 {:else if currentRoute === 'upload'}
-  <h1>{currentRoute}</h1>
+  <Upload/>
 {:else if currentRoute === 'photo'}
-  <h1>{currentRoute}</h1>
+  <PhotoDetails photoId={params.id}/>
 {:else}
   <h1>ERROR: {currentRoute}</h1>
 {/if}

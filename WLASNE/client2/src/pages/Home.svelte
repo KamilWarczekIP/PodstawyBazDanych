@@ -30,9 +30,7 @@
 
         console.log("Loaded new items");
     });
-	onMount(() => {
-        intersectionObserver.observe(document.querySelector("#load-more"))
-	});
+	onMount(() => intersectionObserver.observe(document.querySelector("#load-more")));
 
 </script>
 

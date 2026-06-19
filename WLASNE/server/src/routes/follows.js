@@ -57,7 +57,7 @@ router.delete('/',[
     body('followed_id').exists().isInt()
 ], authenticateToken, async (req, res) => {
     try {
-        const { followed_id } = req.params;
+        const { followed_id } = req.body;
         const userId = req.user.id;
 
         const result = await query(

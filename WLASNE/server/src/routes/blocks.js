@@ -69,12 +69,12 @@ router.delete('/', authenticateToken,
             return res.status(400).json({ errors: errors.array() });
         }
         try {
-            const { blockedId } = req.body;
+            const { blocked_id } = req.body;
             const userId = req.user.id;
 
             const result = await query(
                 'DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?',
-                [userId, blockedId]
+                [userId, blocked_id]
             );
 
             if (result.affectedRows === 0) {
@@ -120,7 +120,7 @@ router.post('/list', authenticateToken, [
 
         res.json({
             blockedUsers: blockedUsers,
-            total: totalCount[0].count,
+            total: totalCount.count,
             page: page
         });
     } catch (error) {
