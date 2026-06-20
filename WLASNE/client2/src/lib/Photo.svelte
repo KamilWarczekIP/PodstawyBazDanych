@@ -26,6 +26,7 @@
                     <h2> {username} </h2>
                 </div>
             </a>
+            <div class="hpad"></div>
             <a href="#photo?id={photoId}">
                 <img class="main" {src} alt="{description}">
             </a>

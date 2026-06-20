@@ -35,6 +35,22 @@
         user = await userAPI.getProfile(userId);
         fetchedPhotos = await photoAPI.getUserPhotos(userId, page);
     });
+
+    async function loadMorePhotos() {
+        if (fetchedPhotos.photos.length >= fetchedPhotos.total) return;
+        page += 1;
+        const next = await photoAPI.getUserPhotos(userId, page);
+        fetchedPhotos = {
+            photos: [...fetchedPhotos.photos, ...next.photos],
+            total: next.total,
+            page: next.page,
+        };
+    }
+
+    function canLoadMorePhotos() {
+        return fetchedPhotos.photos.length < fetchedPhotos.total;
+    }
+
     let menu: Menu;
 </script>
 
@@ -102,7 +118,14 @@
         {#each fetchedPhotos.photos as pht, i}
             <PhotoSmall description={pht.description} id={pht.id} owner_id={pht.owner_id} username={pht.username}/>
         {/each}
-        </div>
+    </div>
+    {#if canLoadMorePhotos()}
+    <div class="load-more-container">
+        <Button variant="outlined" on:click={loadMorePhotos}>
+            Załaduj więcej zdjęć
+        </Button>
+    </div>
+    {/if}
     </Paper>
 <Card>
 

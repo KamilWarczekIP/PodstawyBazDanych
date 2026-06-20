@@ -15,22 +15,19 @@
     commentCount: number;
     userLiked: boolean;
 }[]  = $state([])
-    followAPI.getFeed(1).then((el) => {
-        el.photos.forEach(photo => {photos.push(photo)})
-    });
-
-    photoAPI.getPhoto(16).then((e) => {
-        photos.push(e);
-        photos.push(e);
-        photos.push(e);
-    })
+let feedPage = $state(1);
 
     const intersectionObserver = new IntersectionObserver((entries) => {
         if (entries[0].intersectionRatio <= 0) return;
-
-        console.log("Loaded new items");
+        followAPI.getFeed(feedPage++).then((el) => {
+                el.photos.forEach(photo => {photos.push(photo)})
+            });
+        
     });
-	onMount(() => intersectionObserver.observe(document.querySelector("#load-more")));
+	onMount(() => {
+        intersectionObserver.observe(document.querySelector("#load-more"))
+
+    });
 
 </script>
 

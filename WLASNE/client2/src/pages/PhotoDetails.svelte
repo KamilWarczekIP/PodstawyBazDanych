@@ -1,17 +1,18 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import Card from "@smui/card";
+    import Card, { Actions, Content } from "@smui/card";
     import Button, { Icon, Label } from "@smui/button";
     import TextArea from "@smui/textfield";
     import TextField from "@smui/textfield";
     import Chip, { Set, Text } from '@smui/chips';
-    import { getPhotoURL, getProfilePhotoURL, photoAPI, likeAPI, commentAPI, getUserID } from "../api.svelte";
+    import { getPhotoURL, getProfilePhotoURL, photoAPI, likeAPI, commentAPI, getUserID, type Photo } from "../api.svelte";
     import Comment from "../lib/Comment.svelte";
+    import Dialog, { InitialFocus, Title } from "@smui/dialog";
 
     let { photoId }: { photoId: number } = $props();
 
     // State
-    let photo: any = $state(null);
+    let photo: any= $state(null);
     let likeCount = $state(0);
     let commentCount = $state(0);
     let userLiked = $state(false);
@@ -25,6 +26,8 @@
     let totalComments = $state(0);
     let commentInput = $state("");
     let postingComment = $state(false);
+
+    let openDelDialog = $state(false);
 
     const COMMENTS_PER_PAGE = 5;
 
@@ -61,6 +64,14 @@
         }
     }
 
+    async function handleDelete() {
+        try {
+            await photoAPI.deletePhoto(photoId);
+            window.location.hash = "#settings"
+        } catch (e) {
+            console.error("Errordeleting photo:", e);
+        }
+    }
     async function handleLike() {
         try {
             if (userLiked) {
@@ -112,6 +123,32 @@
     }
 </script>
 
+
+<Dialog
+  bind:open={openDelDialog}
+  aria-labelledby="default-focus-title"
+  aria-describedby="default-focus-content"
+>
+  <Title id="default-focus-title">Wymagane potwierdzenie</Title>
+  <Content id="default-focus-content">
+    Czy na pewno chcesz usunąc to zdjęcie?
+  </Content>
+  <Actions>
+    <Button onclick={handleDelete}>
+      <Label>Tak</Label>
+    </Button>
+    <Button
+      defaultAction
+      use={[InitialFocus]}
+      onclick={() => {
+        openDelDialog = false;
+      }}
+    >
+      <Label>Nie</Label>
+    </Button>
+  </Actions>
+</Dialog>
+
 {#if loading}
     <div class="center">
         <p>Ładowanie...</p>
@@ -137,7 +174,7 @@
         <div class="details-grid">
             <Card padded class="left-column">
                 <div class="hbox">
-                    <a href="#profile?id={photo.owner_id}">
+                    <a href="#profile?id={photo.user_id}">
                         <div class="vbox user-info" style="align-items: center;">
                             <img 
                                 class="user-avatar" 
@@ -167,7 +204,9 @@
                         </Set>
                     </div>
                     <div class="vpad-large"></div>
-                    <Button 
+                    <div class="vbox" style="justify-content: space-between; width:100%;">
+
+                        <Button 
                         variant="outlined" 
                         onclick={handleLike}
                         class="like-button"
@@ -177,6 +216,19 @@
                         </Icon>
                         <Label>{likeCount} polubień</Label>
                     </Button>
+                    {#if photo.user_id === getUserID()}
+                    <Button 
+                        variant="outlined" 
+                        onclick={() => {openDelDialog = true;}}
+                        class="like-button"
+                    > 
+                        <Icon class="material-icons">
+                            delete
+                        </Icon>
+                        <Label>Usuń zdjęcie</Label>
+                    </Button>
+                    {/if}
+                    </div>
                 </div>
             </Card>
         </div>

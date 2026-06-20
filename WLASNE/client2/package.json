@@ -34,6 +34,7 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
+    "svelte-easy-crop": "^1.0.0",
     "svelte-material-ui": "^9.0.1"
   }
 }

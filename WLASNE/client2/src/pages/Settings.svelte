@@ -22,10 +22,11 @@
         isFollowed: boolean;
         isFollowing: boolean;
     } | any = $state({})
+    let photoPage = $state(1)
 
     onMount(async () => {
         user = await userAPI.getProfile(userId || 0);
-        fetchedPhotos = await photoAPI.getUserPhotos(userId || 0, 1);
+        fetchedPhotos = await photoAPI.getUserPhotos(userId || 0, photoPage);
         blockedUsers = (await blockAPI.getBlockedUsers(1)).blockedUsers;
     });
     let bio = $state('')
@@ -38,6 +39,21 @@
     )
     let open = $state(false)
     let blockedUsers : { id: number; username: string; }[] = $state([])
+
+    async function loadMoreSettingsPhotos() {
+        if (fetchedPhotos.photos.length >= fetchedPhotos.total) return;
+        photoPage += 1;
+        const next = await photoAPI.getUserPhotos(userId || 0, photoPage);
+        fetchedPhotos = {
+            photos: [...fetchedPhotos.photos, ...next.photos],
+            total: next.total,
+            page: next.page,
+        };
+    }
+
+    function canLoadMoreSettingsPhotos() {
+        return fetchedPhotos.photos.length < fetchedPhotos.total;
+    }
 
 </script>
 
@@ -67,81 +83,91 @@
 </div>
 </Dialog>
 
-<main>
-    <Paper>
-        <Title>
-            <div class="vbox" style="align-items: center; gap:2rem;">
-                <img src={src} alt="Zdjęcie użytkownika">
-                <span>
-                    {user.username} 
-                </span>
-                <div style="flex-grow: 100;"></div>
-                <Button variant="outlined" onclick={() => {
-                    open = true
-                }}>
-                    <Label>Zablokowani użytkownicy</Label>
+<main class="settings-layout">
+    <div class="settings-main">
+        <Paper>
+            <Title>
+                <div class="vbox" style="align-items: center; gap:2rem;">
+                    <img src={src} alt="Zdjęcie użytkownika">
+                    <span>
+                        {user.username} 
+                    </span>
+                    <div style="flex-grow: 100;"></div>
+                    <Button variant="outlined" onclick={() => {
+                        open = true
+                    }}>
+                        <Label>Zablokowani użytkownicy</Label>
+                    </Button>
+                </div>
+            </Title>
+            <Content>{user.bio != undefined ? user.bio : ""}</Content>
+        </Paper>
+        <div class="hpad"></div>
+        <Card padded >
+            
+
+        <Textfield variant="outlined" bind:value={username} label="Nowa nazwa użytkownika">
+          
+        </Textfield>
+        <div class="hpad"></div>
+        <Textfield variant="outlined" bind:value={password} label="Nowe hasło">
+          
+        </Textfield>
+        
+        <div class="hpad"></div>
+
+        <Textfield textarea bind:value={bio} label="O mnie" input$maxlength={1000}>
+                {#snippet helper()}
+                    <HelperText>Napisz coś o sobie</HelperText>
+                {/snippet}
+                {#snippet internalCounter()}
+                    <CharacterCounter></CharacterCounter>
+                {/snippet}
+            </Textfield>
+
+            <Actions>
+            <Button onclick={async () => {
+                if(password.length < 8)
+
+                userAPI.updateProfile(username !== '' ? username : undefined,
+                    bio !== '' ? bio : undefined,
+                    password !== '' ? password : undefined,
+                );
+
+                bio = '';
+                password = '';
+                username = '';
+                user = await userAPI.getProfile(userId || 0);
+            }}>
+              <Label>Zapisz zmiany</Label>
+            </Button>
+            <Button onclick={() => {
+                bio = '';
+                username = '';
+                password = '';
+            }}>
+              <Label>Odrzuć zmiany</Label>
+            </Button>
+          </Actions>
+
+        </Card>
+    </div>
+    <div class="settings-sidebar">
+        <Paper>
+            <div class="user-images">
+            {#each fetchedPhotos.photos as pht, i}
+                <PhotoSmall description={pht.description} id={pht.id} owner_id={pht.owner_id} username={pht.username}/>
+            {/each}
+            </div>
+            {#if canLoadMoreSettingsPhotos()}
+            <div class="load-more-container">
+                <Button variant="outlined" onclick={loadMoreSettingsPhotos}>
+                    Załaduj więcej zdjęć
                 </Button>
             </div>
-        </Title>
-        <Content>{user.bio != undefined ? user.bio : ""}</Content>
-    </Paper>
-    <div class="hpad"></div>
-    <Card padded >
-        
-
-    <Textfield variant="outlined" bind:value={username} label="Nowa nazwa użytkownika">
-      
-    </Textfield>
-    <div class="hpad"></div>
-    <Textfield variant="outlined" bind:value={password} label="Nowe hasło">
-      
-    </Textfield>
-    
-    <div class="hpad"></div>
-
-    <Textfield textarea bind:value={bio} label="O mnie" input$maxlength={1000}>
-            {#snippet helper()}
-                <HelperText>Napisz coś o sobie</HelperText>
-            {/snippet}
-            {#snippet internalCounter()}
-                <CharacterCounter></CharacterCounter>
-            {/snippet}
-        </Textfield>
-
-        <Actions>
-        <Button onclick={async () => {
-            if(password.length < 8)
-
-            userAPI.updateProfile(username !== '' ? username : undefined,
-                bio !== '' ? bio : undefined,
-                password !== '' ? password : undefined,
-            );
-
-            bio = '';
-            password = '';
-            username = '';
-            user = await userAPI.getProfile(userId || 0);
-        }}>
-          <Label>Zapisz zmiany</Label>
-        </Button>
-        <Button onclick={() => {
-            bio = '';
-            username = '';
-            password = '';
-        }}>
-          <Label>Odrzuć zmiany</Label>
-        </Button>
-      </Actions>
-
-    </Card>
-
-    <Paper>
-        <div class="user-images">
-        {#each fetchedPhotos.photos as pht, i}
-            <PhotoSmall description={pht.description} id={pht.id} owner_id={pht.owner_id} username={pht.username}/>
-        {/each}
-        </div>
-    </Paper>
+            {/if}
+        </Paper>
+    </div>
 </main>
 
 <style>
@@ -153,11 +179,37 @@
         height: 7rem;
         border-radius: 50%;
     }
-        div.user-images {
+    .settings-layout {
+        display: grid;
+        gap: 1.5rem;
+    }
+    .settings-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .settings-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding-bottom: 10rem;
+    }
+    .user-images {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         align-items: center;
         gap: 1rem;
+    }
+    .load-more-container {
+        display: flex;
+        justify-content: center;
+        padding-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+        .settings-layout {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

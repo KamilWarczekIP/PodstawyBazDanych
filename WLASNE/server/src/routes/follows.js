@@ -172,7 +172,7 @@ router.post('/feed', authenticateToken, [
     try {
 
         const userId = req.user.id;
-        const { page = 1, limit = 10 } = req.body;
+        const { page, limit} = req.body;
         const offset = (page - 1) * limit;
 
         const photos = await query(
@@ -184,7 +184,7 @@ router.post('/feed', authenticateToken, [
              )
              ORDER BY p.id DESC
              LIMIT ? OFFSET ?`,
-            [userId, userId, limit, offset]
+            [userId, limit, offset]
         );
 
         const [totalCount] = await query(
@@ -224,7 +224,6 @@ router.post('/feed', authenticateToken, [
                 userLiked: userLike.length > 0
             };
         }));
-
         res.json({
             photos: enhancedPhotos,
             total: totalCount.count,

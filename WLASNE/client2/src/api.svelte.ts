@@ -286,19 +286,26 @@ export const blockAPI = {
   
 };
 
-/*
 // Search APIs
 export const searchAPI = {
-  searchPhotos: (query:string, page:number, limit = 10) =>
-    apiRequest(`/search/photos`),
-  
-  searchUsers: (query:string, page:number, limit = 10) =>
-    apiRequest(`/search/users`),
-  
-  searchTags: (query:string, page:number, limit = 10) =>
-    apiRequest(`/search/tags`)
-  };
+  searchPhotos: async (queryTerm:string, page:number, limit = 5) =>
+    apiRequest(`/search/photos`, {
+      method: 'POST',
+      body: JSON.stringify({ queryTerm, page, limit })
+    }),
 
+  searchUsers: async (queryTerm:string, page:number, limit = 5) : Promise<{users: {id:number, username:string}[], total:number}> =>
+    apiRequest(`/search/users`, {
+      method: 'POST',
+      body: JSON.stringify({ queryTerm, page, limit })
+    }),
+
+  // searchTags: async (query:string, page:number, limit = 5) =>
+  //   apiRequest(`/search/tags?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`, {
+  //     method: 'POST'
+  //   })
+};
+/*
 // Admin APIs
 export const adminAPI = {
   getStorageStats: () =>
