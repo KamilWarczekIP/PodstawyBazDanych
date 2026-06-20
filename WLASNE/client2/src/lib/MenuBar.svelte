@@ -27,7 +27,7 @@
       variant="static"
       color="primary"
     >
-    <TabBar tabs={['Strona główna', 'Szukaj', 'Dodaj', 'Moje konto']} bind:activeTab>
+    <TabBar tabs={['Strona główna', 'Szukaj', 'Dodaj', 'Moje konto']} bind:value={activeTab}>
     {#snippet tab(tab: any)}
       <Tab {tab} onclick={() => {window.location.hash = tabToPathMapping[tab]}}>
       <div class="hbox" style="justify-content: center; align-items: center;">

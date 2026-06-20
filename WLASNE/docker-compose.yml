@@ -55,14 +55,12 @@ services:
   # Svelte Frontend Service (production)
   client:
     build:
-      context: ./client
+      context: ./client2
       dockerfile: Dockerfile
     container_name: client
     restart: unless-stopped
     ports:
       - "5173:5173"
-    environment:
-      VITE_API_URL: http://api:3000
     depends_on:
       - api
     networks:
