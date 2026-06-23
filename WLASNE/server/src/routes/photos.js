@@ -5,7 +5,12 @@ const { authenticateToken } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const fsp = require('fs').promises;
+async function moveFile(src, dest) {
+ await fsp.copyFile(src, dest);
+ console.log('file')
+ await fsp.unlink(src);
+}
 
 const upload = multer(
     {
@@ -37,6 +42,7 @@ async (req, res) => {
     if (req.file == undefined) {
         return res.status(400).json({ errors: "No files were uploaded" })
     }
+    let photoId = -1;
 
     try {
         const requestBody = JSON.parse(req.body.body);
@@ -53,13 +59,10 @@ async (req, res) => {
             'INSERT INTO photos (owner_id, description) VALUES (?, ?)',
             [userId, description]
         );
-        const photoId = result.insertId;
-        
-        fs.rename(req.file.path, path.join(process.cwd(), 'uploads', userId + "", photoId + ".jpg"), (err) => {
-            if (err) return res.status(500);
-        })
-        
+        photoId = result.insertId;
+        await moveFile(req.file.path, path.join(process.cwd(), 'uploads', userId + "", photoId + ".jpg"));
 
+    
         const tagList = tags.map(tag => tag.trim()).filter(Boolean);
 
         for (const tagName of tagList) {
@@ -80,6 +83,7 @@ async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+        query('DELETE FROM photos WHERE id = ?', [photoId]);
         res.status(500).json({ error: 'Failed to upload photo' });
     }
 });
