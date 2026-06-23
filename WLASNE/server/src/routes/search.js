@@ -53,6 +53,7 @@ router.post('/photos', authenticateToken, [
             )`,
             [searchQuery, currentUserId, currentUserId, offset, limit]
         );
+        console.log(1)
 
         res.json({
             photos: photos,
